@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+<meta name="theme-color" content="#0F172A"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="JNUS AI"/>
+<title>JNUS AI · Evaluación Crediticia con IA</title>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="/static/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════ JNUS AI · Institutional FinTech ═══════════════
+   Cooperativas · banca comunal · Machala, Ecuador
+   Navy + gold + blue · light surfaces · line icons · no emojis    */
+:root{
+  --navy:#0F172A; --slate:#1E293B; --bg:#F4F6FA; --card:#FFFFFF;
+  --gold:#C8A24B; --gold-2:#D4AF37; --gold-soft:#F7F0DC;
+  --blue:#2563EB; --blue-soft:#E7EEFE;
+  --green:#16A34A; --green-soft:#E6F6ED;
+  --red:#DC2626; --red-soft:#FCEAEA;
+  --ink:#0F172A; --muted:#64748B; --muted-2:#94A3B8; --line:#E5E9F0;
+  --shadow:0 6px 24px rgba(15,23,42,.07);
+  --shadow-lg:0 18px 48px rgba(15,23,42,.16);
+  --fd:'Manrope',sans-serif; --fb:'Plus Jakarta Sans',system-ui,sans-serif;
+  --r:18px; --r-sm:13px;
+  --nav-h:70px; --sb:env(safe-area-inset-bottom,0px); --st:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+svg.ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.6;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;display:block;flex-shrink:0}
+
+/* ── TOP BAR ── */
+.appbar{position:fixed;top:0;left:0;right:0;z-index:40;height:calc(58px + var(--st));padding-top:var(--st);
+  display:flex;align-items:center;gap:11px;padding-left:18px;padding-right:18px;
+  background:rgba(244,246,250,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo-box{width:36px;height:36px;border-radius:10px;background:var(--navy);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(200,162,75,.4)}
+.brand .logo-box img{width:100%;height:100%;object-fit:cover}
+.brand .col{font-family:var(--fd);font-weight:800;font-size:19px;letter-spacing:1.5px;color:var(--navy)}
+.brand .col .ai{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:2px;margin-left:5px}
+.appbar .right{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);font-weight:600;
+  background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:30px}
+.appbar .right .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+
+/* ── SCREENS ── */
+.screen{position:fixed;top:calc(58px + var(--st));bottom:calc(var(--nav-h) + var(--sb));
+  left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 18px 30px;z-index:1}
+.tab{display:none;animation:fade .35s ease}
+.tab.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;
+  box-shadow:var(--shadow);margin-bottom:16px}
+.h-title{font-family:var(--fd);font-weight:800;font-size:20px;color:var(--navy);letter-spacing:-.3px}
+.h-sub{color:var(--muted);font-size:13px;margin-top:4px}
+.section-title{font-family:var(--fd);font-weight:800;font-size:16px;color:var(--navy);margin:8px 2px 13px;
+  display:flex;align-items:center;gap:9px}
+.section-title .ic{width:19px;height:19px;color:var(--gold)}
+
+/* ── HERO (image bg) ── */
+.hero{position:relative;border-radius:22px;overflow:hidden;box-shadow:var(--shadow-lg);margin-bottom:20px;
+  min-height:430px;display:flex;flex-direction:column;justify-content:flex-end}
+.hero .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,23,42,.55) 0%,rgba(15,23,42,.75) 60%,rgba(15,23,42,.92) 100%)}
+.hero .inner{position:relative;z-index:2;padding:28px 24px}
+.hero .logo-hero{width:64px;height:64px;border-radius:16px;overflow:hidden;margin-bottom:18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);border:1px solid rgba(200,162,75,.35)}
+.hero .logo-hero img{width:100%;height:100%;object-fit:cover}
+.hero h1{font-family:var(--fd);font-weight:800;font-size:29px;line-height:1.15;letter-spacing:-.5px;color:#fff}
+.hero h1 b{color:var(--gold-2)}
+.hero p{color:#CBD5E1;font-size:14px;margin-top:12px;max-width:310px}
+.hero .cta{margin-top:20px}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;cursor:pointer;
+  padding:16px 20px;border-radius:14px;font-family:var(--fb);font-size:15px;font-weight:700;
+  transition:transform .12s,box-shadow .2s}
+.btn:active{transform:scale(.975)}
+.btn .ic{width:19px;height:19px}
+.btn-gold{background:linear-gradient(135deg,#D4AF37,#C8A24B);color:var(--navy);box-shadow:0 10px 24px rgba(200,162,75,.34)}
+.btn-navy{background:var(--navy);color:#fff;box-shadow:0 10px 24px rgba(15,23,42,.25)}
+.btn-light{background:var(--card);color:var(--navy);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.5}
+.btn.sm{padding:11px 16px;font-size:13px;border-radius:12px}
+
+/* ── STEPS (how it works) ── */
+.step-card{display:flex;gap:14px;align-items:center}
+.step-card .num{width:42px;height:42px;border-radius:12px;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-card .num .ic{width:21px;height:21px;color:var(--gold-2)}
+.step-card .tx .t{font-weight:700;color:var(--navy);font-size:14.5px}
+.step-card .tx .d{font-size:13px;color:var(--muted)}
+
+/* ── WIZARD ── */
+.wizard{position:fixed;inset:0;z-index:80;background:var(--bg);display:none;flex-direction:column}
+.wizard.open{display:flex;animation:fade .3s ease}
+.wiz-top{padding:calc(16px + var(--st)) 18px 12px;display:flex;align-items:center;gap:14px}
+.wiz-back{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);
+  display:flex;align-items:center;justify-content:center;color:var(--navy);cursor:pointer;flex-shrink:0}
+.wiz-prog{flex:1;height:7px;background:var(--line);border-radius:4px;overflow:hidden}
+.wiz-prog .bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--gold-2));border-radius:4px;transition:width .4s ease;width:20%}
+.wiz-step{font-size:12px;color:var(--muted);font-weight:700;flex-shrink:0;font-family:var(--fd)}
+.wiz-body{flex:1;overflow-y:auto;padding:10px 18px 20px}
+.wiz-foot{padding:14px 18px calc(16px + var(--sb));border-top:1px solid var(--line);background:var(--card)}
+.wiz-q{font-family:var(--fd);font-weight:800;font-size:22px;color:var(--navy);margin:6px 0 4px;letter-spacing:-.4px}
+.wiz-hint{color:var(--muted);font-size:13px;margin-bottom:18px}
+
+/* ── BIG IMAGE CATEGORY CARDS ── */
+.cat-list{display:flex;flex-direction:column;gap:14px}
+.cat{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;
+  transition:all .2s;box-shadow:var(--shadow)}
+.cat:active{transform:scale(.985)}
+.cat .img{width:100%;height:172px;object-fit:contain;object-position:center;display:block;background:#F3EEE2}
+.cat .meta{padding:15px 16px;display:flex;align-items:center;gap:13px}
+.cat .meta .txt{flex:1}
+.cat .meta .nm{font-family:var(--fd);font-weight:800;font-size:16px;color:var(--navy)}
+.cat .meta .ds{font-size:12.5px;color:var(--muted);margin-top:2px}
+.cat .meta .go{width:34px;height:34px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.cat.sel{border-color:var(--gold-2);box-shadow:0 8px 24px rgba(200,162,75,.22)}
+.cat.sel .go{background:var(--gold-2);color:#fff}
+
+/* ── SELECTION CARDS ── */
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:16px 14px;cursor:pointer;
+  transition:all .2s;position:relative;display:flex;flex-direction:column;gap:10px}
+.opt:active{transform:scale(.97)}
+.opt .ic-box{width:38px;height:38px;border-radius:11px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.opt .lbl{font-weight:700;font-size:13.5px;color:var(--navy);line-height:1.25}
+.opt.sel{border-color:var(--gold-2);background:var(--gold-soft)}
+.opt.sel .ic-box{background:var(--navy);color:var(--gold-2)}
+.opt.sel::after{content:'';position:absolute;top:10px;right:11px;width:18px;height:18px;border-radius:50%;
+  background:var(--gold-2);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-size:12px;background-repeat:no-repeat;background-position:center}
+.opt.full{grid-column:1/-1;flex-direction:row;align-items:center}
+
+/* ── FIELDS ── */
+.field{margin-bottom:20px}
+.field label{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;color:var(--navy);margin-bottom:10px}
+.field label .lab-l{display:flex;align-items:center;gap:8px}
+.field label .lab-l .ic{width:17px;height:17px;color:var(--muted)}
+.field label .val{color:var(--blue);font-family:var(--fd);font-weight:800;font-size:16px}
+input[type=range]{-webkit-appearance:none;width:100%;height:7px;border-radius:5px;background:var(--line);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;
+  background:#fff;border:3px solid var(--blue);box-shadow:0 4px 10px rgba(37,99,235,.35);cursor:pointer}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{flex:1;min-width:max-content;padding:11px 14px;border-radius:12px;border:1.5px solid var(--line);
+  background:var(--card);color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.chips-sel{display:flex;gap:8px;flex-wrap:wrap}
+.chips-sel button{padding:10px 14px;border-radius:30px;border:1.5px solid var(--line);background:var(--card);
+  color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;transition:.2s;font-family:var(--fb)}
+.chips-sel button.on{background:var(--blue-soft);color:var(--blue);border-color:var(--blue)}
+
+/* ── AI ANALYSIS ── */
+.analysis{position:fixed;inset:0;z-index:90;background:linear-gradient(165deg,#0F172A,#060B18);
+  display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:30px}
+.analysis.open{display:flex}
+.analysis .logo-an{width:84px;height:84px;border-radius:22px;overflow:hidden;margin-bottom:24px;
+  border:1px solid rgba(200,162,75,.4);box-shadow:0 0 50px rgba(200,162,75,.3);animation:breathe 2s ease-in-out infinite}
+.analysis .logo-an img{width:100%;height:100%;object-fit:cover}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.analysis h2{font-family:var(--fd);font-weight:800;font-size:22px;margin-bottom:6px}
+.analysis .sub{color:#94A3B8;font-size:13px;margin-bottom:28px}
+.ai-steps{width:100%;max-width:330px;display:flex;flex-direction:column;gap:12px}
+.ai-step{display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:14px 16px;opacity:.4;transition:all .4s}
+.ai-step.on{opacity:1;border-color:rgba(200,162,75,.5);background:rgba(200,162,75,.1)}
+.ai-step .ico{width:24px;height:24px;color:var(--gold-2)}
+.ai-step .tx{flex:1;font-size:13.5px;font-weight:700}
+.ai-step .chk{width:18px;height:18px;color:var(--gold-2);opacity:0;transition:.3s}
+.ai-step.done .chk{opacity:1}
+.ai-step .spin{display:none;width:15px;height:15px;border:2px solid rgba(200,162,75,.3);border-top-color:var(--gold-2);border-radius:50%;animation:sp .7s linear infinite}
+.ai-step.on .spin{display:inline-block}.ai-step.done .spin{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── RESULT GAUGE ── */
+.gauge-card{text-align:center;background:linear-gradient(160deg,#0F172A,#1E293B);color:#fff;
+  border-radius:22px;padding:28px 22px;box-shadow:var(--shadow-lg);margin-bottom:16px;position:relative;overflow:hidden}
+.gauge-card::after{content:'';position:absolute;left:-50px;bottom:-50px;width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.3),transparent 70%)}
+.gauge{position:relative;width:210px;height:210px;margin:6px auto 4px}
+.gauge .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .center .pct{font-family:var(--fd);font-weight:800;font-size:52px;line-height:1}
+.gauge .center .cap{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#94A3B8;margin-top:4px;font-weight:600}
+.risk-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 22px;border-radius:30px;font-weight:800;
+  font-size:15px;margin-top:8px;font-family:var(--fd)}
+.risk-pill .dot{width:10px;height:10px;border-radius:50%}
+.verdict{color:#CBD5E1;font-size:13.5px;margin-top:14px;line-height:1.55}
+
+/* ── FACTORS ── */
+.factor{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.factor .ic-box{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.factor.pos .ic-box{background:var(--green-soft);color:var(--green)}
+.factor.neg .ic-box{background:var(--red-soft);color:var(--red)}
+.factor .ic-box .ic{width:18px;height:18px}
+.factor .body{flex:1}
+.factor .body .nm{font-weight:700;font-size:13.5px;color:var(--navy)}
+.factor .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:5px}
+.factor .bar i{display:block;height:100%;border-radius:3px}
+.factor.pos .bar i{background:var(--green)}
+.factor.neg .bar i{background:var(--red)}
+
+/* ── RECS ── */
+.rec{display:flex;gap:13px;align-items:flex-start;background:var(--blue-soft);border:1px solid #C7D9FB;
+  border-radius:var(--r-sm);padding:14px;margin-bottom:11px}
+.rec .ic-box{width:32px;height:32px;border-radius:9px;background:#fff;color:var(--blue);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec .ic-box .ic{width:18px;height:18px}
+.rec .tx{font-size:13.5px;color:var(--slate);font-weight:500;line-height:1.5;flex:1}
+.rec .gain{font-family:var(--fd);font-weight:800;color:var(--green);font-size:13px;white-space:nowrap}
+
+/* ── MODEL CHIPS ── */
+.mchips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mchip{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.mchip .nm{font-size:11px;color:var(--muted);font-weight:600}
+.mchip .pc{font-family:var(--fd);font-weight:800;font-size:20px;color:var(--navy);margin-top:2px}
+
+/* ── HISTORY ── */
+.hist-item{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-sm);padding:14px;margin-bottom:11px;box-shadow:var(--shadow)}
+.hist-item .ring{width:48px;height:48px;flex-shrink:0}
+.hist-item .meta{flex:1}
+.hist-item .meta .t{font-weight:700;font-size:14px;color:var(--navy)}
+.hist-item .meta .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* ── LEARN ── */
+.learn-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.learn-card h4{font-family:var(--fd);font-weight:800;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.learn-card h4 .ic{width:18px;height:18px;color:var(--gold)}
+.learn-card p{font-size:13.5px;color:var(--muted);line-height:1.6}
+.model-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.model-row:last-child{border:none}
+.model-row .em{width:40px;height:40px;border-radius:11px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--navy);flex-shrink:0}
+.model-row .info .nm{font-weight:700;font-size:14px;color:var(--navy)}
+.model-row .info .ds{font-size:12px;color:var(--muted)}
+
+/* ── PROFILE ── */
+.prof-head{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.prof-av{width:60px;height:60px;border-radius:18px;background:var(--navy);color:var(--gold-2);
+  display:flex;align-items:center;justify-content:center}
+.prof-av .ic{width:28px;height:28px}
+.prof-row{display:flex;align-items:center;gap:13px;padding:15px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.prof-row:last-child{border:none}
+.prof-row .ic-box{width:38px;height:38px;border-radius:11px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--navy)}
+.prof-row .ic-box .ic{width:19px;height:19px}
+.prof-row .tx{flex:1;font-weight:600;font-size:14px;color:var(--navy)}
+.prof-row .ar{color:var(--muted-2)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:54px 24px;color:var(--muted)}
+.empty .ic-box{width:70px;height:70px;border-radius:20px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;color:var(--muted-2);margin:0 auto 18px}
+.empty .ic-box .ic{width:32px;height:32px}
+.empty h3{font-family:var(--fd);font-size:18px;color:var(--slate);margin-bottom:6px}
+.empty p{font-size:13.5px}
+
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:50;height:calc(var(--nav-h) + var(--sb));padding-bottom:var(--sb);
+  display:flex;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-top:1px solid var(--line)}
+.nav button{flex:1;background:none;border:none;cursor:pointer;color:var(--muted-2);position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding-top:8px;font-family:var(--fb)}
+.nav button .ic{width:22px;height:22px;transition:transform .2s}
+.nav button .l{font-size:10px;font-weight:600}
+.nav button.on{color:var(--navy)}
+.nav button.on .ic{transform:translateY(-2px);color:var(--navy)}
+.nav button.on::before{content:'';position:absolute;top:0;width:26px;height:3px;border-radius:3px;background:var(--gold-2)}
+
+/* ── TOAST ── */
+#toast{position:fixed;left:18px;right:18px;bottom:calc(var(--nav-h) + var(--sb) + 14px);z-index:999;
+  background:var(--navy);color:#fff;border-radius:14px;padding:14px 18px;font-size:13.5px;font-weight:600;
+  transform:translateY(160%);opacity:0;transition:.35s;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px}
+#toast.show{transform:none;opacity:1}
+#toast.err{background:var(--red)} #toast.ok{background:var(--green)}
+
+::-webkit-scrollbar{width:0}
+
+/* ── IMAGE FALLBACK PLACEHOLDER (asset faltante) ── */
+.img-ph{display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#0F172A,#1E293B);color:var(--gold-2)}
+.img-ph .ic{width:30px;height:30px;opacity:.7}
+.img-ph.logo{width:100%;height:100%;border-radius:inherit}
+.img-ph.cat{width:100%;height:172px}
+.img-ph.hero{position:absolute;inset:0;width:100%;height:100%}
+</style>
+</head>
+<body>
+
+<!-- ════ ICON SPRITE (Lucide-style line icons) ════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-home"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></g>
+  <g id="i-chart"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></g>
+  <g id="i-book"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></g>
+  <g id="i-history"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></g>
+  <g id="i-settings"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></g>
+  <g id="i-wallet"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7H6a3 3 0 0 1-3-3z"/><circle cx="17" cy="13.5" r="1.2" fill="currentColor" stroke="none"/></g>
+  <g id="i-store"><path d="M4 4h16l-1 4H5z"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M9 20v-6h6v6"/></g>
+  <g id="i-building"><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M16 8h3a2 2 0 0 1 2 2v11"/><path d="M3 21h18"/><path d="M9 7h.01M12 7h.01M9 11h.01M12 11h.01M9 15h.01M12 15h.01"/></g>
+  <g id="i-landmark"><path d="M3 21h18"/><path d="M5 21V10M9 21V10M15 21V10M19 21V10"/><path d="M12 3l8 5H4z"/></g>
+  <g id="i-banknote"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9.5h.01M18 14.5h.01"/></g>
+  <g id="i-shield"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></g>
+  <g id="i-trending"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/></g>
+  <g id="i-trending-down"><path d="M3 7l6 6 4-4 7 7"/><path d="M14 16h6v-6"/></g>
+  <g id="i-user"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></g>
+  <g id="i-briefcase"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></g>
+  <g id="i-cpu"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></g>
+  <g id="i-network"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5V12M12 12l-5 5M12 12l5 5"/></g>
+  <g id="i-arrow-right"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></g>
+  <g id="i-arrow-left"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></g>
+  <g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
+  <g id="i-refresh"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/></g>
+  <g id="i-download"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></g>
+  <g id="i-trash"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 14h10l1-14"/></g>
+  <g id="i-lock"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></g>
+  <g id="i-calendar"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></g>
+  <g id="i-cake"><path d="M4 20h16v-7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3z"/><path d="M4 15c2 1.5 4 1.5 6 0s4-1.5 6 0 2 1.5 2 1.5"/><path d="M12 7V4M9 5l3-1 3 1"/></g>
+  <g id="i-users"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 21a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3.5 3.5 0 0 1 0 6.8M22 21a6.5 6.5 0 0 0-5-6.3"/></g>
+  <g id="i-graduation"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/><path d="M22 9v5"/></g>
+  <g id="i-heart"><path d="M12 20s-7-4.5-9.5-9A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 9.5 5c-2.5 4.5-9.5 9-9.5 9z"/></g>
+  <g id="i-car"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13"/><path d="M4 13h16v5H4z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></g>
+  <g id="i-refresh-debt"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></g>
+  <g id="i-hammer"><path d="M14 7l5 5"/><path d="M9.5 8.5 3 15v4h4l6.5-6.5"/><path d="M13 3l8 8-3 3-8-8z"/></g>
+  <g id="i-expand"><path d="M3 9V3h6M21 15v6h-6M21 9V3h-6M3 15v6h6"/></g>
+  <g id="i-key"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.5 12.5 21 2M17 6l3 3M14 9l2 2"/></g>
+  <g id="i-handshake"><path d="M11 17 8 14a2 2 0 0 1 0-3l4-4 3 3a2 2 0 0 0 3 0"/><path d="M3 11l4-4 3 1M21 13l-4 4-3-1"/></g>
+  <g id="i-piggy"><path d="M19 11a5 5 0 0 0-5-4H9a5 5 0 0 0-5 5 4 4 0 0 0 2 3.5V19h3v-2h2v2h3v-2.5A4 4 0 0 0 19 13h2v-2z"/><circle cx="9" cy="11" r=".6" fill="currentColor" stroke="none"/></g>
+  <g id="i-coins"><circle cx="8" cy="8" r="5"/><path d="M14.5 4.2a5 5 0 0 1 0 15.6"/><path d="M3.5 14a5 5 0 0 0 7 5"/></g>
+  <g id="i-spark"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></g>
+  <g id="i-flask"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></g>
+</defs></svg>
+
+<!-- ════ TOP BAR ════ -->
+<div class="appbar">
+  <div class="brand">
+    <span class="logo-box"><img src="/static/logo.png" alt="JNUS AI" onerror="imgFail(this,'logo')"/></span>
+    <span class="col">JNUS<span class="ai">AI</span></span>
+  </div>
+  <div class="right"><span class="dot"></span><span id="status">IA lista</span></div>
+</div>
+
+<!-- ════ SCREEN AREA ════ -->
+<div class="screen">
+
+  <!-- ════ TAB INICIO ════ -->
+  <div class="tab active" id="t-home">
+    <div class="hero">
+      <img class="bgimg" src="/static/hero.png" alt="" onerror="imgFail(this,'hero')"/>
+      <div class="ov"></div>
+      <div class="inner">
+        <div class="logo-hero"><img src="/static/logo.png" alt="JNUS AI" onerror="imgFail(this,'logo')"/></div>
+        <h1>Evaluación <b>crediticia inteligente</b> para tu cooperativa</h1>
+        <p>Descubre tu probabilidad de aprobación con Inteligencia Artificial. Pensado para cooperativas, cajas y bancos comunales.</p>
+        <div class="cta"><button class="btn btn-gold" onclick="startWizard()"><svg class="ic"><use href="#i-spark"/></svg> Comenzar evaluación</button></div>
+      </div>
+    </div>
+
+    <div class="section-title"><svg class="ic"><use href="#i-network"/></svg> ¿Cómo funciona?</div>
+    <div class="card step-card"><div class="num"><svg class="ic"><use href="#i-user"/></svg></div>
+      <div class="tx"><div class="t">1 · Cuéntanos sobre ti</div><div class="d">Tipo de crédito, empleo e información financiera.</div></div></div>
+    <div class="card step-card"><div class="num"><svg class="ic"><use href="#i-cpu"/></svg></div>
+      <div class="tx"><div class="t">2 · La IA analiza tu perfil</div><div class="d">Cuatro modelos avanzados evalúan tu solicitud.</div></div></div>
+    <div class="card step-card"><div class="num"><svg class="ic"><use href="#i-chart"/></svg></div>
+      <div class="tx"><div class="t">3 · Recibe tu resultado</div><div class="d">Probabilidad, factores y cómo mejorar tu perfil.</div></div></div>
+
+    <div class="card" style="background:var(--gold-soft);border-color:#EBDFBC;display:flex;gap:13px;align-items:center">
+      <div style="width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--gold);flex-shrink:0"><svg class="ic"><use href="#i-lock"/></svg></div>
+      <div style="font-size:12.5px;color:var(--slate)">Tus datos se procesan de forma segura y solo para estimar tu evaluación. JNUS AI es una herramienta orientativa.</div>
+    </div>
+  </div>
+
+  <!-- ════ TAB RESULTADO ════ -->
+  <div class="tab" id="t-result">
+    <div id="result-empty" class="empty">
+      <div class="ic-box"><svg class="ic"><use href="#i-chart"/></svg></div>
+      <h3>Aún no tienes resultados</h3>
+      <p>Realiza tu primera evaluación para ver tu probabilidad de aprobación.</p>
+      <button class="btn btn-gold" style="max-width:240px;margin:18px auto 0" onclick="startWizard()"><svg class="ic"><use href="#i-spark"/></svg> Comenzar</button>
+    </div>
+
+    <div id="result-content" style="display:none">
+      <div class="gauge-card">
+        <div class="gauge">
+          <svg width="210" height="210" viewBox="0 0 210 210">
+            <circle cx="105" cy="105" r="88" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="16"/>
+            <circle id="gauge-arc" cx="105" cy="105" r="88" fill="none" stroke="#D4AF37" stroke-width="16"
+                    stroke-linecap="round" stroke-dasharray="553" stroke-dashoffset="553" transform="rotate(-90 105 105)"/>
+          </svg>
+          <div class="center"><div class="pct" id="r-pct">0%</div><div class="cap">Probabilidad</div></div>
+        </div>
+        <div class="risk-pill" id="r-risk"><span class="dot"></span><span id="r-risk-label">—</span></div>
+        <div class="verdict" id="r-verdict"></div>
+      </div>
+
+      <div class="card">
+        <div class="h-title" style="font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:9px"><svg class="ic" style="width:19px;height:19px;color:var(--green)"><use href="#i-trending"/></svg> Factores a tu favor</div>
+        <div id="r-pos"></div>
+      </div>
+      <div class="card">
+        <div class="h-title" style="font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:9px"><svg class="ic" style="width:19px;height:19px;color:var(--red)"><use href="#i-trending-down"/></svg> Factores que debes mejorar</div>
+        <div id="r-neg"></div>
+      </div>
+      <div class="card">
+        <div class="h-title" style="font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:9px"><svg class="ic" style="width:19px;height:19px;color:var(--gold)"><use href="#i-spark"/></svg> Recomendaciones para ti</div>
+        <div id="r-recs"></div>
+      </div>
+      <div class="card">
+        <div class="h-title" style="font-size:17px;margin-bottom:4px;display:flex;align-items:center;gap:9px"><svg class="ic" style="width:19px;height:19px;color:var(--navy)"><use href="#i-cpu"/></svg> Análisis por modelo de IA</div>
+        <div class="h-sub" style="margin-bottom:14px">Cada modelo evaluó tu perfil de forma independiente</div>
+        <div class="mchips" id="r-models"></div>
+      </div>
+      <button class="btn btn-light" onclick="startWizard()"><svg class="ic"><use href="#i-refresh"/></svg> Nueva evaluación</button>
+    </div>
+  </div>
+
+  <!-- ════ TAB APRENDE ════ -->
+  <div class="tab" id="t-learn">
+    <div class="h-title">Aprende</div>
+    <div class="h-sub" style="margin-bottom:18px">Entiende cómo se evalúa tu crédito y mejora tu perfil.</div>
+
+    <div class="learn-card">
+      <h4><svg class="ic"><use href="#i-chart"/></svg> ¿Qué es la probabilidad de aprobación?</h4>
+      <p>Es una estimación, de 0% a 100%, de qué tan probable es que una institución apruebe tu crédito según tu perfil financiero. Cuanto más alta, mejores tus condiciones de tasa, monto y plazo.</p>
+    </div>
+    <div class="learn-card">
+      <h4><svg class="ic"><use href="#i-cpu"/></svg> Los 4 modelos de IA de JNUS</h4>
+      <div class="model-row"><div class="em"><svg class="ic"><use href="#i-trending"/></svg></div><div class="info"><div class="nm">Regresión Logística</div><div class="ds">Mide cómo cada dato suma o resta a tu aprobación.</div></div></div>
+      <div class="model-row"><div class="em"><svg class="ic"><use href="#i-network"/></svg></div><div class="info"><div class="nm">Random Forest</div><div class="ds">Cientos de árboles de decisión votan tu resultado.</div></div></div>
+      <div class="model-row"><div class="em"><svg class="ic"><use href="#i-trending"/></svg></div><div class="info"><div class="nm">XGBoost</div><div class="ds">Modelo de alto rendimiento usado en la banca.</div></div></div>
+      <div class="model-row"><div class="em"><svg class="ic"><use href="#i-cpu"/></svg></div><div class="info"><div class="nm">Red Neuronal</div><div class="ds">Detecta patrones complejos como el cerebro humano.</div></div></div>
+    </div>
+    <div class="learn-card">
+      <h4><svg class="ic"><use href="#i-trending"/></svg> 5 claves para mejorar tu perfil</h4>
+      <p>1. Paga tus deudas a tiempo (historial impecable).<br/>2. Reduce el número de créditos activos.<br/>3. Mantén ingresos estables y demostrables.<br/>4. Evita sobreendeudarte.<br/>5. Construye antigüedad financiera con tu cooperativa.</p>
+    </div>
+    <div class="learn-card">
+      <h4><svg class="ic"><use href="#i-shield"/></svg> ¿Qué es la IA Explicable?</h4>
+      <p>JNUS no solo te da un número: te muestra qué factores suman y cuáles restan a tu aprobación, para que sepas exactamente qué mejorar.</p>
+    </div>
+  </div>
+
+  <!-- ════ TAB HISTORIAL ════ -->
+  <div class="tab" id="t-history">
+    <div class="h-title">Historial</div>
+    <div class="h-sub" style="margin-bottom:18px">Tus evaluaciones anteriores.</div>
+    <div id="hist-list"></div>
+  </div>
+
+  <!-- ════ TAB PERFIL ════ -->
+  <div class="tab" id="t-profile">
+    <div class="card">
+      <div class="prof-head">
+        <div class="prof-av"><svg class="ic"><use href="#i-user"/></svg></div>
+        <div><div style="font-family:var(--fd);font-weight:800;font-size:18px;color:var(--navy)">Invitado</div>
+        <div style="font-size:13px;color:var(--muted)">Usuario de JNUS AI</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="prof-row" id="install-row" style="display:none" onclick="installPWA()">
+        <div class="ic-box"><svg class="ic"><use href="#i-download"/></svg></div><div class="tx">Instalar app en mi teléfono</div><div class="ar"><svg class="ic" style="width:18px;height:18px"><use href="#i-arrow-right"/></svg></div>
+      </div>
+      <div class="prof-row" onclick="go('learn')"><div class="ic-box"><svg class="ic"><use href="#i-book"/></svg></div><div class="tx">Aprende sobre crédito</div><div class="ar"><svg class="ic" style="width:18px;height:18px"><use href="#i-arrow-right"/></svg></div></div>
+      <div class="prof-row" onclick="clearHistory()"><div class="ic-box"><svg class="ic"><use href="#i-trash"/></svg></div><div class="tx">Borrar mi historial</div><div class="ar"><svg class="ic" style="width:18px;height:18px"><use href="#i-arrow-right"/></svg></div></div>
+    </div>
+
+    <!-- ═══ PANEL ADMIN · solo visible con ?admin=1 ═══ -->
+    <div class="card" id="admin-panel" style="display:none">
+      <div class="h-title" style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:9px">
+        <svg class="ic" style="width:18px;height:18px;color:var(--gold)"><use href="#i-shield"/></svg> Modelo activo (Admin)</div>
+      <div class="h-sub" style="margin-bottom:14px">Información del modelo entrenado en la plataforma web</div>
+      <div id="admin-model-info" style="font-size:13px;color:var(--muted)">Cargando…</div>
+      <div style="margin-top:14px;padding:12px;background:var(--gold-soft);border:1px solid #EBDFBC;border-radius:10px;font-size:11.5px;color:var(--slate);line-height:1.5">
+        <b>Arquitectura:</b> La plataforma web (admin) entrena los modelos y guarda el mejor en
+        <code>jnus_bundle.pkl</code>. Esta app consume <b>siempre el modelo más reciente</b> de forma automática (solo inferencia).
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center;color:var(--muted);font-size:12px">
+      JNUS AI · Advanced Financial System<br/>v3.2 · Powered by SIAC · Machala, Ecuador
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ WIZARD ════ -->
+<div class="wizard" id="wizard">
+  <div class="wiz-top">
+    <div class="wiz-back" onclick="wizBack()"><svg class="ic"><use href="#i-arrow-left"/></svg></div>
+    <div class="wiz-prog"><div class="bar" id="wiz-bar"></div></div>
+    <div class="wiz-step" id="wiz-step">1/5</div>
+  </div>
+  <div class="wiz-body" id="wiz-body"></div>
+  <div class="wiz-foot"><button class="btn btn-navy" id="wiz-next" onclick="wizNext()">Continuar</button></div>
+</div>
+
+<!-- ════ AI ANALYSIS ════ -->
+<div class="analysis" id="analysis">
+  <div class="logo-an"><img src="/static/logo.png" alt="JNUS AI" onerror="imgFail(this,'logo')"/></div>
+  <h2>Analizando tu perfil…</h2>
+  <div class="sub">Inteligencia Artificial en acción</div>
+  <div class="ai-steps">
+    <div class="ai-step" data-i="0"><svg class="ic ico"><use href="#i-trending"/></svg><span class="tx">Regresión Logística</span><span class="spin"></span><svg class="ic chk"><use href="#i-check"/></svg></div>
+    <div class="ai-step" data-i="1"><svg class="ic ico"><use href="#i-network"/></svg><span class="tx">Random Forest</span><span class="spin"></span><svg class="ic chk"><use href="#i-check"/></svg></div>
+    <div class="ai-step" data-i="2"><svg class="ic ico"><use href="#i-trending"/></svg><span class="tx">XGBoost</span><span class="spin"></span><svg class="ic chk"><use href="#i-check"/></svg></div>
+    <div class="ai-step" data-i="3"><svg class="ic ico"><use href="#i-cpu"/></svg><span class="tx">Red Neuronal</span><span class="spin"></span><svg class="ic chk"><use href="#i-check"/></svg></div>
+  </div>
+</div>
+
+<!-- ════ BOTTOM NAV ════ -->
+<div class="nav">
+  <button class="on" data-t="home" onclick="go('home')"><svg class="ic"><use href="#i-home"/></svg><span class="l">Inicio</span></button>
+  <button data-t="result" onclick="go('result')"><svg class="ic"><use href="#i-chart"/></svg><span class="l">Resultado</span></button>
+  <button data-t="learn" onclick="go('learn')"><svg class="ic"><use href="#i-book"/></svg><span class="l">Aprende</span></button>
+  <button data-t="history" onclick="go('history')"><svg class="ic"><use href="#i-history"/></svg><span class="l">Historial</span></button>
+  <button data-t="profile" onclick="go('profile')"><svg class="ic"><use href="#i-settings"/></svg><span class="l">Perfil</span></button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════ JNUS AI · consumer logic ═══════════════
+const API='';
+let OPTIONS=null, answers={}, step=0, lastResult=null;
+
+function icon(id){return `<svg class="ic"><use href="#${id}"/></svg>`;}
+
+// ── Fallback de imágenes: si un asset falta, placeholder limpio (sin ícono roto) ──
+function imgFail(el,kind){
+  if(el.dataset.failed) return;        // evita bucles
+  el.dataset.failed='1';
+  el.style.display='none';
+  const ph=document.createElement('div');
+  ph.className='img-ph '+(kind||'');
+  ph.innerHTML='<svg class="ic"><use href="#i-landmark"/></svg>';
+  if(el.parentNode) el.parentNode.insertBefore(ph,el);
+}
+
+// ── Estructura de negocio: 3 categorías + subcategorías (UI) → mapeo al modelo ──
+// El backend/engine NO cambia: traducimos a los valores que el modelo ya conoce.
+const CATEGORIES=[
+  {id:'consumo', name:'Crédito de Consumo', desc:'Gastos del hogar, salud, educación y más', img:'/static/consumo.png',
+   sub:[
+     {id:'hogar', label:'Gastos del hogar', icon:'i-home', model:'Personal'},
+     {id:'educacion', label:'Educación', icon:'i-graduation', model:'Personal'},
+     {id:'salud', label:'Salud', icon:'i-heart', model:'Personal'},
+     {id:'vehiculo', label:'Compra de vehículo', icon:'i-car', model:'Vehicular'},
+     {id:'personal', label:'Consumo personal', icon:'i-wallet', model:'Personal'},
+     {id:'refin', label:'Refinanciar deudas', icon:'i-refresh-debt', model:'Personal'},
+     {id:'otros', label:'Otros gastos familiares', icon:'i-users', model:'Personal'},
+   ]},
+  {id:'micro', name:'Microcrédito', desc:'Para tu negocio o emprendimiento', img:'/static/microcredito.png',
+   sub:[
+     {id:'simple', label:'Microcrédito Simple', icon:'i-store', model:'Microcrédito'},
+     {id:'ampliado', label:'Microcrédito Ampliado', icon:'i-trending', model:'Productivo'},
+   ]},
+  {id:'inmob', name:'Crédito Inmobiliario', desc:'Compra, construcción o remodelación', img:'/static/inmobiliario.png',
+   sub:[
+     {id:'compra', label:'Compra de vivienda', icon:'i-home', model:'Hipotecario'},
+     {id:'construccion', label:'Construcción', icon:'i-hammer', model:'Hipotecario'},
+     {id:'remodel', label:'Remodelación', icon:'i-key', model:'Hipotecario'},
+     {id:'ampliacion', label:'Ampliación de vivienda', icon:'i-expand', model:'Hipotecario'},
+   ]},
+];
+
+// Situación laboral (mismos valores que el modelo)
+const EMPLOYMENT=[
+  {v:'Empleado Público', icon:'i-landmark'},
+  {v:'Empleado Privado', icon:'i-building'},
+  {v:'Emprendedor', icon:'i-trending'},
+  {v:'Negocio Propio', icon:'i-store'},
+  {v:'Trabajo Informal', icon:'i-briefcase'},
+  {v:'Desempleado', icon:'i-user'},
+];
+
+// Tipo de institución (UI) → mapeo a una institución que el modelo conoce
+const INSTITUTIONS=[
+  {id:'coop', label:'Cooperativa de Ahorro y Crédito', icon:'i-piggy', model:'Cooperativa JEP'},
+  {id:'grupo', label:'Grupo de Ahorro', icon:'i-coins', model:'Cooperativa JEP'},
+  {id:'comunal', label:'Banco Comunal', icon:'i-users', model:'Cooperativa JEP'},
+  {id:'asoc', label:'Asociación de Crédito', icon:'i-handshake', model:'Cooperativa JEP'},
+  {id:'fundacion', label:'Fundación Microfinanciera', icon:'i-shield', model:'Cooperativa JEP'},
+];
+
+// ── nav ──
+function go(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('t-'+t).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.querySelector('.screen').scrollTop=0;
+  if(t==='history') renderHistory();
+}
+function toast(m,c=''){const t=document.getElementById('toast');t.textContent=m;t.className='show '+c;
+  clearTimeout(window._t);window._t=setTimeout(()=>t.className='',3500);}
+
+// ── load options (educación, historial, sexo desde backend) ──
+async function loadOptions(){
+  try{ OPTIONS=await (await fetch(API+'/api/options')).json(); }
+  catch{ OPTIONS={education:["Primaria","Secundaria","Universitaria","Posgrado"],
+    payment_history:["Malo","Regular","Bueno","Excelente"], sex:["Masculino","Femenino"]}; }
+}
+
+// ── WIZARD ──  pasos: categoría, subcategoría, situación, datos, institución+revisión
+const STEPS=['categoria','subcategoria','situacion','personal','institucion'];
+
+function startWizard(){
+  answers={catId:null, subId:null, tipo_credito:null, situacion_laboral:null,
+    edad:35, sexo:'Masculino', educacion:'Universitaria', cargas_familiares:1,
+    ingresos_mensuales:800, creditos_activos:1, historial_pagos:'Bueno',
+    instId:null, institucion:null};
+  step=0;
+  document.getElementById('wizard').classList.add('open');
+  renderStep();
+}
+function closeWizard(){document.getElementById('wizard').classList.remove('open');}
+function wizBack(){ if(step===0){closeWizard();} else {step--;renderStep();} }
+
+function renderStep(){
+  document.getElementById('wiz-bar').style.width=((step+1)/STEPS.length*100)+'%';
+  document.getElementById('wiz-step').textContent=(step+1)+'/'+STEPS.length;
+  const body=document.getElementById('wiz-body');
+  const next=document.getElementById('wiz-next');
+  next.innerHTML= step===STEPS.length-1?icon('i-spark')+' Analizar mi perfil':'Continuar';
+  body.scrollTop=0;
+
+  if(STEPS[step]==='categoria'){
+    body.innerHTML=`<div class="wiz-q">¿Qué crédito deseas solicitar?</div>
+      <div class="wiz-hint">Selecciona una categoría</div>
+      <div class="cat-list">${CATEGORIES.map(c=>
+        `<div class="cat ${answers.catId===c.id?'sel':''}" onclick="pickCat('${c.id}')">
+          <img class="img" src="${c.img}" alt="${c.name}" onerror="imgFail(this,'cat')"/>
+          <div class="meta"><div class="txt"><div class="nm">${c.name}</div><div class="ds">${c.desc}</div></div>
+          <div class="go">${icon('i-arrow-right')}</div></div></div>`).join('')}</div>`;
+  }
+  else if(STEPS[step]==='subcategoria'){
+    const cat=CATEGORIES.find(c=>c.id===answers.catId);
+    const q=cat.id==='consumo'?'¿Para qué usarás el crédito?':cat.id==='micro'?'¿Qué tipo de microcrédito?':'¿Qué deseas hacer?';
+    body.innerHTML=`<div class="wiz-q">${q}</div>
+      <div class="wiz-hint">${cat.name}</div>
+      <div class="opt-grid">${cat.sub.map(s=>
+        `<div class="opt ${answers.subId===s.id?'sel':''}" onclick="pickSub('${s.id}')">
+          <div class="ic-box">${icon(s.icon)}</div><div class="lbl">${s.label}</div></div>`).join('')}</div>`;
+  }
+  else if(STEPS[step]==='situacion'){
+    body.innerHTML=`<div class="wiz-q">¿Cuál es tu situación laboral?</div>
+      <div class="wiz-hint">Esto ayuda a estimar tu estabilidad</div>
+      <div class="opt-grid">${EMPLOYMENT.map(e=>
+        `<div class="opt ${answers.situacion_laboral===e.v?'sel':''}" onclick="pickEmp('${e.v}')">
+          <div class="ic-box">${icon(e.icon)}</div><div class="lbl">${e.v}</div></div>`).join('')}</div>`;
+  }
+  else if(STEPS[step]==='personal'){
+    body.innerHTML=`<div class="wiz-q">Tu información financiera</div>
+      <div class="wiz-hint">Ajusta los valores a tu realidad</div>
+      <div class="field"><label><span class="lab-l">${icon('i-cake')} Edad</span><span class="val" id="v-edad">${answers.edad} años</span></label>
+        <input type="range" min="18" max="75" value="${answers.edad}" oninput="answers.edad=+this.value;document.getElementById('v-edad').textContent=this.value+' años'"/></div>
+      <div class="field"><label><span class="lab-l">${icon('i-banknote')} Ingresos mensuales</span><span class="val" id="v-ing">$${answers.ingresos_mensuales}</span></label>
+        <input type="range" min="0" max="6000" step="50" value="${answers.ingresos_mensuales}" oninput="answers.ingresos_mensuales=+this.value;document.getElementById('v-ing').textContent='$'+(+this.value).toLocaleString()"/></div>
+      <div class="field"><label><span class="lab-l">${icon('i-users')} Cargas familiares</span><span class="val" id="v-car">${answers.cargas_familiares}</span></label>
+        <input type="range" min="0" max="6" value="${answers.cargas_familiares}" oninput="answers.cargas_familiares=+this.value;document.getElementById('v-car').textContent=this.value"/></div>
+      <div class="field"><label><span class="lab-l">${icon('i-wallet')} Créditos activos</span><span class="val" id="v-cre">${answers.creditos_activos}</span></label>
+        <input type="range" min="0" max="6" value="${answers.creditos_activos}" oninput="answers.creditos_activos=+this.value;document.getElementById('v-cre').textContent=this.value"/></div>
+      <div class="field"><label><span class="lab-l">${icon('i-user')} Sexo</span></label>
+        <div class="seg">${OPTIONS.sex.map(s=>`<button class="${answers.sexo===s?'on':''}" onclick="pick('sexo','${s}')">${s}</button>`).join('')}</div></div>
+      <div class="field"><label><span class="lab-l">${icon('i-graduation')} Nivel educativo</span></label>
+        <div class="chips-sel">${OPTIONS.education.map(s=>`<button class="${answers.educacion===s?'on':''}" onclick="pick('educacion','${s}')">${s}</button>`).join('')}</div></div>
+      <div class="field"><label><span class="lab-l">${icon('i-calendar')} Historial de pagos</span></label>
+        <div class="chips-sel">${OPTIONS.payment_history.map(s=>`<button class="${answers.historial_pagos===s?'on':''}" onclick="pick('historial_pagos','${s}')">${s}</button>`).join('')}</div></div>`;
+  }
+  else if(STEPS[step]==='institucion'){
+    body.innerHTML=`<div class="wiz-q">¿Qué tipo de institución te interesa?</div>
+      <div class="wiz-hint">Confirma y analiza tu perfil</div>
+      <div class="opt-grid" style="margin-bottom:20px">${INSTITUTIONS.map(i=>
+        `<div class="opt full ${answers.instId===i.id?'sel':''}" onclick="pickInst('${i.id}')">
+          <div class="ic-box">${icon(i.icon)}</div><div class="lbl">${i.label}</div></div>`).join('')}</div>
+      <div class="card" id="review-box"></div>`;
+    renderReview();
+  }
+}
+
+function renderReview(){
+  const box=document.getElementById('review-box'); if(!box) return;
+  const cat=CATEGORIES.find(c=>c.id===answers.catId);
+  const sub=cat?cat.sub.find(s=>s.id===answers.subId):null;
+  const r=(k,v)=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted);font-size:13px">${k}</span><span style="font-weight:700;color:var(--navy);font-size:13px;text-align:right">${v||'—'}</span></div>`;
+  box.innerHTML=`<div style="font-family:var(--fd);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:8px">Resumen de tu solicitud</div>
+    ${r('Crédito',cat?cat.name:'')}
+    ${r('Destino',sub?sub.label:'')}
+    ${r('Situación laboral',answers.situacion_laboral)}
+    ${r('Edad',answers.edad+' años')}
+    ${r('Ingresos','$'+answers.ingresos_mensuales.toLocaleString())}
+    ${r('Cargas familiares',answers.cargas_familiares)}
+    ${r('Créditos activos',answers.creditos_activos)}
+    ${r('Educación',answers.educacion)}
+    ${r('Historial de pagos',answers.historial_pagos)}`;
+}
+
+function pickCat(id){answers.catId=id;answers.subId=null;renderStep();setTimeout(wizNext,200);}
+function pickSub(id){const cat=CATEGORIES.find(c=>c.id===answers.catId);const s=cat.sub.find(x=>x.id===id);
+  answers.subId=id;answers.tipo_credito=s.model;renderStep();setTimeout(wizNext,200);}
+function pickEmp(v){answers.situacion_laboral=v;renderStep();setTimeout(wizNext,200);}
+function pick(key,val){answers[key]=val;renderStep();}
+function pickInst(id){const i=INSTITUTIONS.find(x=>x.id===id);answers.instId=id;answers.institucion=i.model;renderStep();}
+
+function wizNext(){
+  const s=STEPS[step];
+  if(s==='categoria' && !answers.catId){toast('Selecciona una categoría','err');return;}
+  if(s==='subcategoria' && !answers.subId){toast('Selecciona una opción','err');return;}
+  if(s==='situacion' && !answers.situacion_laboral){toast('Selecciona tu situación laboral','err');return;}
+  if(s==='institucion' && !answers.instId){toast('Selecciona un tipo de institución','err');return;}
+  if(step<STEPS.length-1){ step++; renderStep(); }
+  else { runAnalysis(); }
+}
+
+// ── AI ANALYSIS animation + real scoring ──
+async function runAnalysis(){
+  closeWizard();
+  const a=document.getElementById('analysis'); a.classList.add('open');
+  document.querySelectorAll('.ai-step').forEach(s=>s.classList.remove('on','done'));
+
+  // payload con SOLO los campos que el modelo conoce (mapeados)
+  const payload={
+    edad:answers.edad, sexo:answers.sexo, educacion:answers.educacion,
+    cargas_familiares:answers.cargas_familiares, ingresos_mensuales:answers.ingresos_mensuales,
+    creditos_activos:answers.creditos_activos, historial_pagos:answers.historial_pagos,
+    institucion:answers.institucion, tipo_credito:answers.tipo_credito,
+    situacion_laboral:answers.situacion_laboral
+  };
+  const scoreP=fetch(API+'/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>r.json()).catch(e=>({error:e.message}));
+
+  const steps=document.querySelectorAll('.ai-step');
+  for(let i=0;i<steps.length;i++){
+    steps[i].classList.add('on'); await sleep(620);
+    steps[i].classList.remove('on'); steps[i].classList.add('done');
+  }
+  await sleep(300);
+  const data=await scoreP;
+  a.classList.remove('open');
+  if(data.error){toast(data.error,'err');return;}
+  lastResult=data;
+  saveHistory(data);
+  renderResult(data);
+  go('result');
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+// ── RESULT ──
+function renderResult(d){
+  document.getElementById('result-empty').style.display='none';
+  document.getElementById('result-content').style.display='block';
+  const pct=d.percent;
+  document.getElementById('r-pct').textContent=pct+'%';
+  const C=553, arc=document.getElementById('gauge-arc');
+  arc.style.transition='stroke-dashoffset 1.1s cubic-bezier(.16,1,.3,1),stroke .6s';
+  arc.style.strokeDashoffset=C-(C*d.probability);
+  arc.setAttribute('stroke',d.risk_color);
+  const pill=document.getElementById('r-risk');
+  document.getElementById('r-risk-label').textContent=d.risk_label;
+  pill.querySelector('.dot').style.background=d.risk_color;
+  pill.style.background=d.risk==='alta'?'var(--green-soft)':d.risk==='media'?'var(--gold-soft)':'var(--red-soft)';
+  pill.style.color=d.risk_color;
+  document.getElementById('r-verdict').textContent=d.verdict;
+
+  const fac=(f,cls)=>`<div class="factor ${cls}"><div class="ic-box">${icon(cls==='pos'?'i-trending':'i-trending-down')}</div>
+    <div class="body"><div class="nm">${f.label}</div><div class="bar"><i style="width:${Math.max(12,f.weight*100)}%"></i></div></div></div>`;
+  document.getElementById('r-pos').innerHTML=(d.positive_factors||[]).map(f=>fac(f,'pos')).join('')||'<p style="color:var(--muted);font-size:13px">Sin factores positivos destacados.</p>';
+  document.getElementById('r-neg').innerHTML=(d.negative_factors||[]).map(f=>fac(f,'neg')).join('')||'<p style="color:var(--muted);font-size:13px">No hay factores negativos relevantes.</p>';
+
+  const RECIC={'\u{1F4B3}':'i-wallet','\u{1F4C5}':'i-calendar','\u{1F4B5}':'i-banknote','\u2705':'i-check'};
+  document.getElementById('r-recs').innerHTML=(d.recommendations||[]).map(r=>{
+    const ic=RECIC[r.icon]||'i-spark';
+    const txt=(r.text||'').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,'').trim();
+    return `<div class="rec"><div class="ic-box">${icon(ic)}</div><span class="tx">${txt}</span>${r.gain>0?`<span class="gain">+${r.gain}%</span>`:''}</div>`;
+  }).join('');
+
+  const names={logit:'Regresión Logística',random_forest:'Random Forest',xgboost:'XGBoost',neural_net:'Red Neuronal'};
+  document.getElementById('r-models').innerHTML=Object.entries(d.per_model||{}).map(([k,v])=>
+    `<div class="mchip"><div class="nm">${names[k]||k}</div><div class="pc">${v}%</div></div>`).join('');
+}
+
+// ── HISTORY ──
+function saveHistory(d){
+  const h=JSON.parse(localStorage.getItem('janus_hist')||'[]');
+  const cat=CATEGORIES.find(c=>c.id===answers.catId);
+  h.unshift({pct:d.percent,risk:d.risk_label,color:d.risk_color,
+    tipo:cat?cat.name:'Crédito',date:new Date().toISOString()});
+  localStorage.setItem('janus_hist',JSON.stringify(h.slice(0,20)));
+}
+function renderHistory(){
+  const h=JSON.parse(localStorage.getItem('janus_hist')||'[]');
+  const el=document.getElementById('hist-list');
+  if(!h.length){el.innerHTML=`<div class="empty"><div class="ic-box">${icon('i-history')}</div><h3>Sin evaluaciones aún</h3><p>Tu historial aparecerá aquí.</p></div>`;return;}
+  el.innerHTML=h.map(x=>{
+    const off=553-(553*x.pct/100);
+    const dt=new Date(x.date).toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'});
+    return `<div class="hist-item">
+      <svg class="ring" viewBox="0 0 210 210"><circle cx="105" cy="105" r="88" fill="none" stroke="#E5E9F0" stroke-width="20"/>
+      <circle cx="105" cy="105" r="88" fill="none" stroke="${x.color}" stroke-width="20" stroke-linecap="round"
+      stroke-dasharray="553" stroke-dashoffset="${off}" transform="rotate(-90 105 105)"/>
+      <text x="105" y="120" text-anchor="middle" font-size="54" font-weight="800" fill="#0F172A" font-family="Manrope">${x.pct}</text></svg>
+      <div class="meta"><div class="t">${x.tipo} · ${x.risk}</div><div class="d">${dt}</div></div></div>`;
+  }).join('');
+}
+function clearHistory(){if(confirm('¿Borrar todo tu historial?')){localStorage.removeItem('janus_hist');renderHistory();toast('Historial borrado','ok');}}
+
+// ── PWA ──
+let dp=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;const r=document.getElementById('install-row');if(r)r.style.display='flex';});
+function installPWA(){if(dp){dp.prompt();dp=null;}else{toast('Usa el menú del navegador → "Añadir a pantalla de inicio"');}}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js',{scope:'/app'}).catch(()=>{}));}
+
+// ── ADMIN MODE (solo con ?admin=1) ──
+function isAdmin(){
+  try{return new URLSearchParams(location.search).get('admin')==='1';}catch{return false;}
+}
+async function loadAdminPanel(){
+  if(!isAdmin()) return;
+  const panel=document.getElementById('admin-panel');
+  if(panel) panel.style.display='block';
+  try{
+    const m=await (await fetch(API+'/api/model_info')).json();
+    if(m.error){document.getElementById('admin-model-info').innerHTML='<span style="color:var(--red)">'+m.error+'</span>';return;}
+    const row=(k,v)=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">${k}</span><span style="font-weight:700;color:var(--navy)">${v}</span></div>`;
+    const extra=Object.entries(m.metrics||{}).map(([k,v])=>row('AUC · '+k, v)).join('');
+    document.getElementById('admin-model-info').innerHTML=
+      row('Versión del modelo', m.version)+
+      row('Fecha de entrenamiento', m.training_date)+
+      row('Tamaño del dataset', (m.dataset_size||0).toLocaleString()+' registros')+
+      row('Mejor algoritmo', m.best_algorithm)+
+      row('AUC (mejor)', m.best_auc)+
+      row('Archivo', m.bundle_path)+
+      '<div style="margin-top:10px;font-size:11px;color:var(--muted)">Métricas por modelo:</div>'+extra;
+  }catch(e){document.getElementById('admin-model-info').textContent='No se pudo cargar la info del modelo.';}
+}
+
+// ── init ──
+async function init(){
+  await loadOptions();
+  try{const h=await (await fetch(API+'/api/health')).json();document.getElementById('status').textContent=h.ok?'IA lista':'Sin conexión';}
+  catch{document.getElementById('status').textContent='Sin conexión';}
+  loadAdminPanel();
+}
+init();
+</script>
+</body>
+</html>

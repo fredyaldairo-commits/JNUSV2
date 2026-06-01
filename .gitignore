@@ -7,6 +7,11 @@ __pycache__/
 .env.*
 uploads/*
 !uploads/.gitkeep
+models/*.pkl
+node_modules/
+android/
+ios/
+capacitor-www/_next/
 .DS_Store
 Thumbs.db
 .idea/

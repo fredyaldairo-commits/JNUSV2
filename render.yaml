@@ -5,10 +5,19 @@ services:
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --workers 2 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    # 1 worker + threads: el hot-reload del modelo en memoria es consistente
+    # (el bundle persistido en disco es la fuente de verdad compartida).
+    startCommand: gunicorn app:app --workers 1 --threads 8 --timeout 180 --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_ENV
         value: production
       - key: PYTHON_VERSION
         value: 3.11.9
+      # Credenciales admin y secreto de sesión → configurar en el panel de Render
+      - key: JNUS_SECRET_KEY
+        sync: false
+      - key: JNUS_ADMIN_USER
+        sync: false
+      - key: JNUS_ADMIN_PASSWORD
+        sync: false
     autoDeploy: true

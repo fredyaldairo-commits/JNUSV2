@@ -1,0 +1,17 @@
+{
+  "name": "JNUS AI · Evaluación Crediticia",
+  "short_name": "JNUS AI",
+  "description": "Descubre tu probabilidad de aprobación crediticia con Inteligencia Artificial.",
+  "start_url": "/app",
+  "scope": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F172A",
+  "lang": "es",
+  "categories": ["finance", "business"],
+  "icons": [
+    { "src": "/static/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

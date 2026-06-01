@@ -1,0 +1,20 @@
+{
+  "appId": "ai.siac.janus",
+  "appName": "JANUS AI",
+  "webDir": "capacitor-www",
+  "server": {
+    "url": "https://janus.siac.ai/app",
+    "cleartext": false
+  },
+  "backgroundColor": "#0F172AFF",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#0F172A",
+      "showSpinner": false
+    }
+  }
+}

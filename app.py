@@ -4,7 +4,8 @@ JNUS Credit AI Lab — Backend Flask
 API REST para análisis de riesgo crediticio con IA + econometría.
 
 Endpoints:
-  GET  /                  → sirve el frontend (templates/index.html)
+  GET  /                  → redirige a /app (frontend único: janus_app.html)
+  GET  /app               → app consumidor JNUS AI (ÚNICO frontend)
   GET  /api/health        → ping de salud
   POST /api/upload        → carga CSV/Excel y devuelve metadatos
   POST /api/preprocess    → limpieza + codificación de variables
@@ -19,11 +20,17 @@ import io
 import os
 import time
 import traceback
+import warnings
+
+# El scaler se ajusta con nombres de columnas pero en predicción recibe arrays;
+# silenciamos solo ese aviso cosmético de sklearn.
+warnings.filterwarnings("ignore", message="X does not have valid feature names")
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import (Flask, jsonify, redirect, render_template, request,
+                   send_from_directory, url_for)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SCIENCE STACK (importes tolerantes — si falla xgboost o tensorflow, seguimos)
@@ -54,6 +61,12 @@ try:
 except Exception:
     HAS_XGBOOST = False
 
+# Motor de inferencia del producto consumidor (capa nueva, no toca el pipeline)
+from engine import ENGINE, BUNDLE_PATH, retrain_from_dataframe, REQUIRED_COLUMNS
+
+from functools import wraps
+from flask import session
+
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(APP_DIR, "uploads")
@@ -61,6 +74,22 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024  # 64MB
+# Clave de sesión y credenciales admin (configurables por entorno en producción)
+app.secret_key = os.environ.get("JNUS_SECRET_KEY", "jnus-dev-secret-change-in-prod")
+ADMIN_USER = os.environ.get("JNUS_ADMIN_USER", "admin")
+ADMIN_PASSWORD = os.environ.get("JNUS_ADMIN_PASSWORD", "jnus2026")
+
+
+def admin_required(fn):
+    """Protege rutas/endpoints de administración. Sin sesión → 401 o redirect."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not session.get("is_admin"):
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "No autorizado. Inicia sesión como administrador."}), 401
+            return redirect(url_for("admin_login"))
+        return fn(*args, **kwargs)
+    return wrapper
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ESTADO EN MEMORIA (single-user). Para multiusuario usar Flask-Session/DB.
@@ -159,11 +188,253 @@ def normalize_binary_text(series: pd.Series) -> pd.Series:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# RUTAS
+# HELPERS DE PREDICCIÓN (reutilizados por /api/predict y el análisis XAI what-if)
+# ──────────────────────────────────────────────────────────────────────────────
+def _row_to_input(row) -> np.ndarray:
+    """Convierte una fila cruda (lista en orden de feature_names) al espacio de
+    entrada del modelo (escalado si el modelo lo requiere)."""
+    x_raw = np.array(row, dtype=float).reshape(1, -1)
+    if STATE.get("use_scaled") and STATE.get("scaler") is not None:
+        return STATE["scaler"].transform(x_raw)
+    return x_raw
+
+
+def _compute_prob(x_in: np.ndarray) -> float:
+    """Probabilidad P(Y=1) para un vector ya en el espacio de entrada del modelo."""
+    sm_m = STATE.get("sm_model")
+    if sm_m is not None:
+        x_sm = sm.add_constant(x_in, has_constant="add")
+        return float(sm_m.predict(x_sm)[0])
+    m = STATE.get("model")
+    if hasattr(m, "predict_proba"):
+        return float(m.predict_proba(x_in)[0, 1])
+    z = float(m.decision_function(x_in)[0])
+    return 1.0 / (1.0 + float(np.exp(-z)))
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# RUTAS · UN SOLO FRONTEND: janus_app.html (producto consumidor JNUS AI)
 # ──────────────────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # Single source of truth: la raíz siempre lleva a la app JNUS.
+    return redirect(url_for("consumer_app"))
+
+
+@app.route("/app")
+def consumer_app():
+    # ÚNICO frontend activo de la aplicación.
+    return render_template("janus_app.html")
+
+
+# Rutas legacy retiradas → redirigen a la app única (evita abrir el dashboard viejo).
+@app.route("/lab")
+def legacy_lab():
+    return redirect(url_for("consumer_app"))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADMIN · plataforma privada de administración (login + entreno + versiones)
+# ══════════════════════════════════════════════════════════════════════════════
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        user = (request.form.get("user") or "").strip()
+        pwd = request.form.get("password") or ""
+        if user == ADMIN_USER and pwd == ADMIN_PASSWORD:
+            session["is_admin"] = True
+            return redirect(url_for("admin_dashboard"))
+        return render_template("admin.html", login=True, error="Credenciales incorrectas")
+    if session.get("is_admin"):
+        return redirect(url_for("admin_dashboard"))
+    return render_template("admin.html", login=True, error=None)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("is_admin", None)
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    return render_template("admin.html", login=False, error=None,
+                           required=REQUIRED_COLUMNS)
+
+
+# ─── API ADMIN (protegida) ──────────────────────────────────────────────────
+@app.route("/api/admin/retrain", methods=["POST"])
+@admin_required
+def api_admin_retrain():
+    """Sube CSV/Excel/SAV → reentrena el motor de producción → /app usa el nuevo
+    modelo automáticamente (hot-reload del bundle)."""
+    try:
+        if "file" not in request.files:
+            return jsonify({"error": "No se envió ningún archivo."}), 400
+        f = request.files["file"]
+        if not f.filename:
+            return jsonify({"error": "Archivo sin nombre."}), 400
+        ext = f.filename.lower().rsplit(".", 1)[-1]
+        raw = f.read()
+
+        # Leer según formato (CSV / Excel / SAV)
+        if ext == "csv":
+            df = None
+            for sep in [",", ";", "\t", "|"]:
+                for enc in ["utf-8", "latin-1", "utf-8-sig"]:
+                    try:
+                        cand = pd.read_csv(io.BytesIO(raw), sep=sep, encoding=enc, engine="python")
+                        if cand.shape[1] > 1:
+                            df = cand
+                            break
+                    except Exception:
+                        continue
+                if df is not None:
+                    break
+            if df is None:
+                df = pd.read_csv(io.BytesIO(raw))
+        elif ext in ("xlsx", "xls"):
+            df = pd.read_excel(io.BytesIO(raw))
+        elif ext == "sav":
+            try:
+                import pyreadstat
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix=".sav", delete=False) as tmp:
+                    tmp.write(raw)
+                    tmp_path = tmp.name
+                df, _meta = pyreadstat.read_sav(tmp_path)
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+            except ImportError:
+                return jsonify({"error": "Para archivos .SAV instala: pip install pyreadstat"}), 500
+        else:
+            return jsonify({"error": f"Formato no soportado: .{ext}. Usa CSV, Excel o SAV."}), 400
+
+        df.columns = [str(c).strip() for c in df.columns]
+        if df.empty:
+            return jsonify({"error": "El archivo está vacío."}), 400
+
+        # Validar esquema requerido
+        missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
+        if missing:
+            return jsonify({
+                "error": "Faltan columnas requeridas: " + ", ".join(missing),
+                "required": REQUIRED_COLUMNS,
+                "received": list(df.columns),
+            }), 400
+
+        # Reentrenar el motor de producción + hot-reload
+        bundle = retrain_from_dataframe(df, source=f.filename)
+        metrics = bundle.get("metrics", {})
+        best = max(metrics.items(), key=lambda kv: kv[1].get("auc", 0)) if metrics else (None, {})
+        names = {"logit": "Regresión Logística", "random_forest": "Random Forest",
+                 "xgboost": "XGBoost", "neural_net": "Red Neuronal"}
+        return jsonify({
+            "ok": True,
+            "message": "Modelo reentrenado y publicado. La app pública ya usa el nuevo modelo.",
+            "version": bundle.get("version"),
+            "dataset_size": bundle.get("dataset_size"),
+            "best_algorithm": names.get(best[0], best[0]),
+            "best_auc": round(best[1].get("auc", 0), 3),
+            "best_accuracy": round(best[1].get("accuracy", 0), 3),
+            "metrics": {names.get(k, k): v for k, v in metrics.items()},
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"Error al reentrenar: {e}"}), 500
+
+
+@app.route("/api/admin/retrain_seed", methods=["POST"])
+@admin_required
+def api_admin_retrain_seed():
+    """Reentrena con el dataset semilla (demo) sin necesidad de subir archivo."""
+    try:
+        from engine import train_and_persist
+        bundle = train_and_persist(source="seed")
+        ENGINE.bundle = bundle
+        return jsonify({"ok": True, "message": "Modelo demo regenerado.",
+                        "version": bundle.get("version")})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── API CONSUMIDOR ────────────────────────────────────────────────────────────
+@app.route("/api/options")
+def api_options():
+    return jsonify({"ok": True, **ENGINE.options()})
+
+
+@app.route("/api/score", methods=["POST"])
+def api_score():
+    try:
+        payload = request.get_json(silent=True) or {}
+        result = ENGINE.score(payload)
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"No se pudo evaluar el perfil: {e}"}), 500
+
+
+@app.route("/api/model_info")
+def api_model_info():
+    """Solo-lectura: metadatos del modelo activo (panel admin). NO entrena nada."""
+    try:
+        if not ENGINE.ready():
+            ENGINE.bootstrap()
+        b = ENGINE.bundle or {}
+        metrics = b.get("metrics", {})
+        # mejor algoritmo por AUC
+        best, best_auc = None, 0.0
+        for name, m in metrics.items():
+            auc = float(m.get("auc", 0))
+            if auc >= best_auc:
+                best, best_auc = name, auc
+        # fecha de entrenamiento = mtime del .pkl persistido
+        import datetime as _dt
+        train_date = None
+        try:
+            if os.path.exists(BUNDLE_PATH):
+                train_date = _dt.datetime.fromtimestamp(
+                    os.path.getmtime(BUNDLE_PATH)).strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            pass
+        names = {"logit": "Regresión Logística", "random_forest": "Random Forest",
+                 "xgboost": "XGBoost", "neural_net": "Red Neuronal"}
+        best_acc = float(metrics.get(best, {}).get("accuracy", 0)) if best else 0.0
+        return jsonify({
+            "ok": True,
+            "version": b.get("version", "1.0"),
+            "training_date": train_date or "—",
+            "dataset_size": b.get("dataset_size", 2500),
+            "best_algorithm": names.get(best, best or "—"),
+            "best_auc": round(best_auc, 3),
+            "best_accuracy": round(best_acc, 3),
+            "source": b.get("source", "seed"),
+            "metrics": {names.get(k, k): v for k, v in metrics.items()},
+            "bundle_path": os.path.basename(BUNDLE_PATH),
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/manifest.webmanifest")
+def manifest():
+    return send_from_directory(app.static_folder, "manifest.webmanifest",
+                               mimetype="application/manifest+json")
+
+
+@app.route("/sw.js")
+def service_worker():
+    # Servido desde la raíz para que el scope cubra /app
+    resp = send_from_directory(app.static_folder, "sw.js", mimetype="application/javascript")
+    resp.headers["Service-Worker-Allowed"] = "/"
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 @app.route("/api/health")
@@ -654,21 +925,8 @@ def api_predict():
             row.append(v)
             used_values[f] = v
 
-        x_raw = np.array(row).reshape(1, -1)
-        use_scaled = STATE.get("use_scaled", True)
-        x_in = STATE["scaler"].transform(x_raw) if use_scaled and STATE.get("scaler") is not None else x_raw
-
-        # Predicción
-        if STATE.get("sm_model") is not None:
-            x_sm = sm.add_constant(x_in, has_constant="add")
-            prob = float(STATE["sm_model"].predict(x_sm)[0])
-        else:
-            m = STATE["model"]
-            if hasattr(m, "predict_proba"):
-                prob = float(m.predict_proba(x_in)[0, 1])
-            else:
-                z = float(m.decision_function(x_in)[0])
-                prob = 1.0 / (1.0 + float(np.exp(-z)))
+        x_in = _row_to_input(row)
+        prob = _compute_prob(x_in)
 
         # Contribuciones por feature
         contribs = []
@@ -697,14 +955,66 @@ def api_predict():
                     "contribution": float(imp * v),
                 })
         else:
-            for name, v in zip(feats, x_in[0]):
+            # Modelos sin coeficientes (red neuronal MLP): atribución local por
+            # ABLACIÓN — cuánto cae la probabilidad si esta variable vuelve a su
+            # mediana. Da un XAI real para la red neuronal.
+            ranges_local = STATE.get("feature_ranges") or {}
+            for i, name in enumerate(feats):
+                ablated = list(row)
+                ablated[i] = ranges_local.get(name, {}).get("median", 0.0)
+                p_ab = _compute_prob(_row_to_input(ablated))
                 contribs.append({
-                    "name": name, "value": float(v),
+                    "name": name, "value": float(x_in[0][i]),
                     "raw": float(used_values[name]),
-                    "contribution": 0.0,
+                    "contribution": float(prob - p_ab),
                 })
 
         contribs.sort(key=lambda d: abs(d["contribution"]), reverse=True)
+
+        # ── XAI · análisis what-if (educación financiera) ──────────────────────
+        # Para las top features, probamos pequeñas variaciones y medimos cuánto
+        # sube/baja la probabilidad. Funciona para CUALQUIER modelo (lineal o árbol)
+        # porque mide la sensibilidad real del modelo entrenado.
+        base_row = [used_values[f] for f in feats]
+        sensitivity = []
+        for c in contribs[:12]:
+            fname = c["name"]
+            i = feats.index(fname)
+            r = ranges.get(fname, {"min": 0.0, "max": 1.0})
+            fmin, fmax = float(r.get("min", 0.0)), float(r.get("max", 1.0))
+            cur = base_row[i]
+            binary = set([fmin, fmax]).issubset({0.0, 1.0})
+            candidates = ([1.0 - cur] if binary
+                          else [v for v in (min(fmax, cur + (fmax - fmin) * 0.1),
+                                            max(fmin, cur - (fmax - fmin) * 0.1)) if v != cur])
+            best = None
+            for cand in candidates:
+                row2 = list(base_row); row2[i] = cand
+                p2 = _compute_prob(_row_to_input(row2))
+                if best is None or (p2 - prob) > best["delta"]:
+                    best = {"value": float(cand), "delta": float(p2 - prob), "prob": float(p2)}
+            if best is not None:
+                sensitivity.append({
+                    "name": fname, "current": float(cur), "binary": bool(binary),
+                    "suggested": best["value"], "delta": best["delta"], "new_prob": best["prob"],
+                })
+
+        improvers = sorted([s for s in sensitivity if s["delta"] > 0.005],
+                           key=lambda s: s["delta"], reverse=True)[:4]
+        tips = []
+        for s in improvers:
+            up = s["suggested"] > s["current"]
+            if s["binary"]:
+                action = "Activa" if s["suggested"] >= 0.5 else "Desactiva"
+                tips.append(f"{action} «{s['name']}» → tu probabilidad subiría +{s['delta']*100:.1f} pts (a {s['new_prob']*100:.0f}%).")
+            else:
+                verb = "Aumentar" if up else "Reducir"
+                tips.append(f"{verb} «{s['name']}» mejoraría tu aprobación en +{s['delta']*100:.1f} pts (a {s['new_prob']*100:.0f}%).")
+        if not tips:
+            tips.append("Tu perfil ya está bien optimizado para este modelo: ninguna variable individual mejora mucho la probabilidad.")
+
+        positive = [c for c in contribs if c["contribution"] > 0][:6]
+        negative = [c for c in contribs if c["contribution"] < 0][:6]
 
         decision = "APROBAR" if prob > 0.65 else ("REVISAR" if prob > 0.4 else "RECHAZAR")
         explanation = (
@@ -722,6 +1032,12 @@ def api_predict():
             "model": STATE.get("model_name"),
             "contributions": contribs[:20],
             "explanation": explanation,
+            "xai": {
+                "positive": positive,
+                "negative": negative,
+                "improvers": improvers,
+                "tips": tips,
+            },
         }))
     except Exception as e:
         traceback.print_exc()
@@ -851,12 +1167,22 @@ def api_nn_activations():
 # ──────────────────────────────────────────────────────────────────────────────
 # MAIN  (dev local: `python app.py`  ·  prod: gunicorn app:app)
 # ──────────────────────────────────────────────────────────────────────────────
+# Pre-cargar / entrenar los modelos del producto al iniciar (una sola vez).
+# En la nube (gunicorn) corre al importar el módulo en cada worker.
+if os.environ.get("JNUS_NO_WARM", os.environ.get("JANUS_NO_WARM")) != "1":
+    try:
+        ENGINE.bootstrap()
+        print(f"[JNUS] Motor de inferencia listo · modelos: {list(ENGINE.bundle['models'].keys())}")
+    except Exception as _e:
+        print(f"[JNUS] Aviso: bootstrap diferido ({_e})")
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     host = os.environ.get("HOST", "0.0.0.0")
     debug = os.environ.get("FLASK_ENV", "development") != "production"
     print("\n" + "=" * 60)
-    print("  SIAC · JANUS AI — Credit Intelligence Backend")
+    print("  SIAC · JNUS AI — Credit Intelligence Backend")
     print("=" * 60)
     print(f"  Local:   http://127.0.0.1:{port}")
     print(f"  Network: http://{host}:{port}")
