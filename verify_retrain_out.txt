@@ -1,0 +1,8 @@
+SEMILLA: source=seed size=2500 score=70.4% NNauc=0.815
+REAL:    source=real_test.csv size=1200 score=22.4% NNauc=0.744 nfeat=32
+hot-reload (ENGINE usa el nuevo bundle): True
+coef ingresos: semilla=0.558 real=-0.488 -> CAMBIO=SI
+score: 70.4% -> 22.4% -> CAMBIO=SI
+red GELU reentrenada: loss_pts=13 dead=0/96 sana=True
+institución NUEVA aprendida (columna creada): True
+RESTAURADO a semilla: source=seed size=2500
