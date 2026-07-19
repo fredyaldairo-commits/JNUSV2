@@ -269,6 +269,12 @@ def metodologia():
     return render_template("metodologia.html")
 
 
+@app.route("/privacidad")
+def privacidad():
+    """Política de privacidad y tratamiento de datos (LOPDP Ecuador). Pública."""
+    return render_template("privacidad.html")
+
+
 @app.route("/api/methodology")
 def api_methodology():
     """Artefactos NO sensibles del modelo activo para la página de metodología
@@ -386,6 +392,19 @@ def api_admin_retrain():
                 "received": list(df.columns),
             }), 400
 
+        # Validar tamaño mínimo y clases para evitar crashes en el entrenamiento
+        if len(df) < 50:
+            return jsonify({
+                "error": f"El dataset es demasiado pequeño ({len(df)} filas). Se requieren al menos 50 filas para un entrenamiento robusto de la red neuronal."
+            }), 400
+
+        from engine import _normalize_target
+        temp_target = _normalize_target(df["aprobado"]).dropna()
+        if temp_target.nunique() < 2:
+            return jsonify({
+                "error": "El dataset debe incluir casos aprobados Y rechazados (ambas clases) en la columna 'aprobado'."
+            }), 400
+
         # Reentrenar el motor de producción + hot-reload
         bundle = retrain_from_dataframe(df, source=f.filename)
         metrics = bundle.get("metrics", {})
@@ -460,6 +479,19 @@ def api_admin_retrain_sse():
         return jsonify({"error": "Faltan columnas: " + ", ".join(missing),
                         "required": REQUIRED_COLUMNS, "received": list(df.columns)}), 400
 
+    # Validar tamaño mínimo y clases para evitar crashes en el entrenamiento
+    if len(df) < 50:
+        return jsonify({
+            "error": f"El dataset es demasiado pequeño ({len(df)} filas). Se requieren al menos 50 filas para un entrenamiento robusto de la red neuronal."
+        }), 400
+
+    from engine import _normalize_target
+    temp_target = _normalize_target(df["aprobado"]).dropna()
+    if temp_target.nunique() < 2:
+        return jsonify({
+            "error": "El dataset debe incluir casos aprobados Y rechazados (ambas clases) en la columna 'aprobado'."
+        }), 400
+
     q = queue.Queue()
 
     def progress_cb(step_id, step_idx, total, detail):
@@ -527,6 +559,18 @@ def api_admin_retrain_seed():
 @app.route("/api/options")
 def api_options():
     return jsonify({"ok": True, **ENGINE.options()})
+
+
+@app.route("/api/survey", methods=["POST"])
+def api_survey():
+    """Guarda una respuesta de la encuesta corta (necesidades del proceso de crédito)."""
+    try:
+        d = request.get_json(silent=True) or {}
+        d["user_id"] = session.get("uid")
+        sid = jdb.save_survey(d)
+        return jsonify({"ok": True, "id": sid})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
 
 
 @app.route("/api/score", methods=["POST"])
@@ -597,7 +641,8 @@ def _login_session(user: dict, remember: bool = True) -> None:
 def api_signup():
     """Crea una cuenta real e inicia sesión."""
     d = request.get_json(silent=True) or {}
-    res = jdb.create_account(d.get("name", ""), d.get("email", ""), d.get("password", ""))
+    res = jdb.create_account(d.get("name", ""), d.get("email", ""), d.get("password", ""),
+                             consent=bool(d.get("consent")))
     if not res["ok"]:
         return jsonify({"error": res["error"]}), 400
     user = res["user"]
@@ -627,6 +672,19 @@ def api_logout():
     """Cierra la sesión del usuario (no toca la sesión de admin)."""
     session.pop("uid", None)
     return jsonify({"ok": True})
+
+
+@app.route("/api/account", methods=["DELETE"])
+def api_delete_account():
+    """Derecho de supresión (LOPDP): elimina la cuenta en sesión y sus datos."""
+    uid = session.get("uid")
+    if not uid:
+        return jsonify({"error": "No hay sesión activa."}), 401
+    res = jdb.delete_account(uid)
+    if not res.get("ok"):
+        return jsonify({"error": res.get("error", "No se pudo eliminar.")}), 400
+    session.pop("uid", None)
+    return jsonify({"ok": True, "deleted_evals": res.get("deleted_evals", 0)})
 
 
 @app.route("/api/me")
@@ -687,6 +745,57 @@ def api_admin_evaluations():
         limit = 100
     rows = jdb.list_evaluations(limit=limit)
     return jsonify({"ok": True, "count": len(rows), "evaluations": rows})
+
+
+@app.route("/api/admin/import_survey", methods=["POST"])
+@admin_required
+def api_admin_import_survey():
+    """Importa el CSV/Excel exportado de Google Forms o Microsoft Forms a `encuestas`."""
+    try:
+        if "file" not in request.files:
+            return jsonify({"error": "No se envió ningún archivo."}), 400
+        f = request.files["file"]
+        if not f.filename:
+            return jsonify({"error": "Archivo sin nombre."}), 400
+        ext = f.filename.lower().rsplit(".", 1)[-1]
+        raw = f.read()
+
+        if ext == "csv":
+            df = None
+            for sep in [",", ";", "\t", "|"]:
+                for enc in ["utf-8", "latin-1", "utf-8-sig"]:
+                    try:
+                        cand = pd.read_csv(io.BytesIO(raw), sep=sep, encoding=enc, engine="python")
+                        if cand.shape[1] > 1:
+                            df = cand
+                            break
+                    except Exception:
+                        continue
+                if df is not None:
+                    break
+            if df is None:
+                df = pd.read_csv(io.BytesIO(raw))
+        elif ext in ("xlsx", "xls"):
+            df = pd.read_excel(io.BytesIO(raw))
+        else:
+            return jsonify({"error": "Formato no soportado. Usa el CSV o Excel exportado del formulario."}), 400
+
+        n = jdb.import_survey_dataframe(df)
+        return jsonify({"ok": True, "imported": n, "stats": jdb.survey_stats()})
+    except Exception as e:
+        return jsonify({"error": f"No se pudo importar: {e}"}), 400
+
+
+@app.route("/api/admin/surveys")
+@admin_required
+def api_admin_surveys():
+    """Respuestas de la encuesta corta + resumen (la pregunta abierta es oro para el pitch)."""
+    try:
+        limit = min(int(request.args.get("limit", 300)), 1000)
+    except Exception:
+        limit = 300
+    return jsonify({"ok": True, "stats": jdb.survey_stats(),
+                    "surveys": jdb.list_surveys(limit=limit)})
 
 
 @app.route("/api/admin/label", methods=["POST"])
@@ -788,6 +897,7 @@ def api_model_info():
             "approval_rate": round(b.get("approval_rate", 0) * 100, 1),
             "class_distribution": b.get("class_distribution"),
             "n_features": b.get("n_features", len(b.get("columns", []))),
+            "columns": b.get("columns", []),
             "metrics": {names.get(k, k): v for k, v in metrics.items()},
             "bundle_path": os.path.basename(BUNDLE_PATH),
         })
@@ -855,6 +965,71 @@ def api_admin_download_db():
     return send_file(jdb.DB_PATH, as_attachment=True,
                      download_name="janus.db",
                      mimetype="application/x-sqlite3")
+
+
+@app.route("/api/admin/restore_db", methods=["POST"])
+@admin_required
+def api_admin_restore_db():
+    """Restaura la base de datos SQLite subida por el administrador (reemplazo seguro)."""
+    import shutil
+    import tempfile
+    import sqlite3
+    
+    if "file" not in request.files:
+        return jsonify({"error": "No se envió ningún archivo."}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": "Archivo sin nombre."}), 400
+        
+    try:
+        # 1. Guardar a un archivo temporal para validación
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+            f.save(tmp.name)
+            tmp_path = tmp.name
+            
+        # 2. Validar que sea SQLite y tenga el esquema esperado
+        is_valid = False
+        try:
+            conn = sqlite3.connect(tmp_path)
+            conn.row_factory = sqlite3.Row
+            tables = [r["name"] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()]
+            if "usuarios" in tables and "evaluaciones" in tables:
+                is_valid = True
+            conn.close()
+        except Exception as e:
+            print(f"[Restore DB] Validación falló: {e}")
+            
+        if not is_valid:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            return jsonify({"error": "El archivo no es una base de datos de JNUS válida (faltan tablas requeridas)."}), 400
+            
+        # 3. Reemplazar la base de datos existente usando el API de Backup de SQLite
+        with jdb._lock:
+            src_conn = sqlite3.connect(tmp_path)
+            dst_conn = sqlite3.connect(jdb.DB_PATH, timeout=15)
+            src_conn.backup(dst_conn)
+            dst_conn.close()
+            src_conn.close()
+            
+            # Eliminar archivo temporal
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            
+            # Reinicializar la BD (aplica los PRAGMA journal_mode=WAL y valida esquema)
+            jdb.init_db()
+            
+        return jsonify({"ok": True, "message": "Base de datos restaurada correctamente."})
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"Error al restaurar base de datos: {e}"}), 500
 
 
 @app.route("/manifest.webmanifest")

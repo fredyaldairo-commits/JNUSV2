@@ -274,12 +274,13 @@ function fillCoef(coefs, intercept){
   const tb=document.querySelector('#coef-tbl tbody');
   if(!coefs||!coefs.length){ tb.innerHTML='<tr><td class="note">Reentrena para ver los coeficientes.</td></tr>'; return; }
   const maxA=Math.max(...coefs.map(c=>Math.abs(c.coef)),0.01);
-  tb.innerHTML='<tr><th>Variable</th><th>Efecto</th><th style="text-align:right">β (peso)</th></tr>'+
+  tb.innerHTML='<tr><th>Variable</th><th>Efecto</th><th style="text-align:right">Odds Ratio</th></tr>'+
     coefs.map(c=>{const pos=c.coef>=0;const w=Math.round(Math.abs(c.coef)/maxA*100);
+      const or=(c.odds_ratio!=null)?c.odds_ratio:Math.exp(c.coef);
       return `<tr><td>${c.label}</td>
         <td><div class="bar" style="width:${w}%;background:${pos?'#16A34A':'#EF4444'}"></div></td>
-        <td class="num ${pos?'pos':'neg'}">${pos?'+':''}${c.coef.toFixed(2)}</td></tr>`;}).join('');
-  document.getElementById('intercept-note').innerHTML=`Sesgo β₀ = <b>${(intercept>=0?'+':'')+intercept}</b> · <span class="pos">verde +</span> sube la aprobación, <span class="neg">rojo −</span> la baja; la barra = cuánto pesa.`;
+        <td class="num ${pos?'pos':'neg'}" title="β = ${(pos?'+':'')+c.coef.toFixed(2)}">×${(+or).toFixed(2)}</td></tr>`;}).join('');
+  document.getElementById('intercept-note').innerHTML=`Peso = <b>Odds Ratio = exp(β)</b> (por desviación estándar): <span class="pos">× &gt; 1</span> multiplica las probabilidades a favor, <span class="neg">× &lt; 1</span> en contra, ×1 no influye. OR base = <b>×${Math.exp(intercept).toFixed(2)}</b>.`;
 }
 function fillImp(imp){
   const tb=document.querySelector('#imp-tbl tbody');

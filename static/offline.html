@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0F172A"/>
+<title>Sin conexión · JNUS AI</title>
+  :root{--ink-black:#0B0B0C;--bg:#F9EFE5;--card:#FFFFFF;--acc-terra:#9C6A2E;--line:#EAE0CE;--muted:#6B675E;--muted-2:#9C958A;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink-black);
+    min-height:100%;display:flex;align-items:center;justify-content:center;padding:26px;
+    text-align:center;position:relative;overflow:hidden;background:var(--bg)}
+  /* Fondo manos transparente para dar textura sutil */
+  .bg{position:fixed;inset:-4%;z-index:0;background:url('/static/manos.png') center/cover no-repeat;
+    opacity:0.06;animation:drift 32s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:scale(1.05)}to{transform:scale(1.14)}}
+  .card{position:relative;z-index:2;width:100%;max-width:360px;
+    background:var(--card);
+    border:1.5px solid var(--line);border-radius:24px;padding:34px 26px;
+    animation:pop .5s cubic-bezier(.16,1,.3,1)}
+  @keyframes pop{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:none}}
+  .ring{width:96px;height:96px;margin:0 auto 22px;border-radius:50%;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg)}
+  .ring::before,.ring::after{content:'';position:absolute;border:1.5px solid var(--ink-black);
+    border-radius:50%;animation:ripple 3s ease-out infinite}
+  .ring::before{inset:8px;opacity:0.2}.ring::after{inset:-8px;border-style:dashed;opacity:0.1;animation-delay:1s}
+  @keyframes ripple{0%{opacity:.2;transform:scale(.85)}70%{opacity:.05}100%{opacity:0;transform:scale(1.08)}}
+  .ring svg{width:40px;height:40px;stroke:var(--ink-black);stroke-width:1.7;fill:none;
+    stroke-linecap:round;stroke-linejoin:round}
+  h1{font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:22px;font-weight:800;color:var(--ink-black);letter-spacing:-.3px;margin-bottom:10px}
+  p{font-family:'Roboto',system-ui,sans-serif;font-size:14px;line-height:1.55;color:var(--muted);margin-bottom:24px}
+  .btn{display:inline-flex;align-items:center;gap:9px;width:100%;justify-content:center;
+    padding:16px 20px;border-radius:14px;border:none;cursor:pointer;
+    font-family:'Roboto',system-ui,sans-serif;font-weight:700;font-size:15px;color:#fff;
+    background:var(--ink-black);transition:transform .15s}
+  .btn:active{transform:scale(.96)}
+  .btn svg{width:19px;height:19px;stroke:#fff;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .hint{margin-top:16px;font-family:'Roboto',system-ui,sans-serif;font-size:12px;color:var(--muted-2)}
+  .brand{position:relative;z-index:2;position:fixed;bottom:20px;left:0;right:0;
+    font-size:11px;letter-spacing:2px;color:var(--muted-2);font-weight:700}
+  @media(prefers-reduced-motion:reduce){.bg,.ring::before,.ring::after{animation:none}}
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="card">
+    <div class="ring">
+      <svg viewBox="0 0 24 24"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg>
+    </div>
+    <h1>Estás sin conexión</h1>
+    <p>JNUS AI necesita internet para evaluar tu crédito con la IA en vivo. Revisa tu red y vuelve a intentarlo.</p>
+    <button class="btn" onclick="location.reload()">
+      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/></svg>
+      Reintentar
+    </button>
+    <div class="hint">Tu historial guardado sigue disponible sin conexión.</div>
+  </div>
+  <div class="brand">JNUS AI · MACHALA, ECUADOR</div>
+  <script>
+    // Reintenta solo cuando el navegador recupera conexión
+    window.addEventListener('online', () => location.reload());
+  </script>
+</body>
+</html>

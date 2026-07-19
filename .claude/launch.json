@@ -1,11 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "jnus",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["app.py"],
-      "port": 5000
-    }
+    { "name": "jnus", "runtimeExecutable": "python", "runtimeArgs": ["_preview.py"], "port": 5099, "autoPort": true }
   ]
 }

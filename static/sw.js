@@ -1,8 +1,10 @@
 /* JNUS AI · Service Worker
    App-shell cache + network-first para la API (mantiene sincronía con el backend). */
-const CACHE = 'janus-ai-v13';
+const CACHE = 'janus-ai-v42';
 const SHELL = [
   '/app',
+  '/static/offline.html',
+  '/static/manos.png',
   '/static/manifest.webmanifest',
   '/static/logo.png',
   '/static/hero.png',
@@ -49,7 +51,11 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE).then((c) => c.put(e.request, copy));
         }
         return res;
-      }).catch(() => caches.match(e.request).then((c) => c || caches.match('/app')))
+      }).catch(() =>
+        caches.match(e.request)
+          .then((c) => c || caches.match('/app'))
+          .then((c) => c || caches.match('/static/offline.html'))
+      )
     );
     return;
   }

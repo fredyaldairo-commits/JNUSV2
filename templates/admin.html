@@ -149,12 +149,35 @@ a{color:inherit;text-decoration:none}
 .brain-card h2 .ic{color:var(--gold-2)}
 .brain-card .desc{color:#94a3b8}
 .brain-wrap{position:relative;border-radius:14px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%,rgba(37,99,235,.10),transparent 60%);border:1px solid rgba(255,255,255,.06)}
-#brain-canvas{display:block;width:100%;height:320px}
-@media(max-width:600px){ #brain-canvas{height:240px} }
+#brain-canvas{display:block;width:100%;height:440px}
+@media(max-width:600px){ #brain-canvas{height:340px} }
 .brain-overlay{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:14px 16px}
 .brain-stat{display:inline-flex;align-self:flex-start;align-items:center;gap:8px;background:rgba(15,23,42,.55);backdrop-filter:blur(6px);
   border:1px solid rgba(255,255,255,.10);border-radius:30px;padding:6px 13px;font-size:12px;font-weight:700;color:#e2e8f0}
 .brain-stat .bs-dot{width:8px;height:8px;border-radius:50%;background:#64748b;transition:.3s}
+.brain-hint{align-self:center;margin-bottom:4px;font-size:10.5px;color:#94a3b8;background:rgba(15,23,42,.5);
+  backdrop-filter:blur(6px);padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.06)}
+/* Etiquetas de capa (proyectadas sobre el 3D, estilo referencia) */
+#brain-labels{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.blab{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;text-align:center;line-height:1.15;text-shadow:0 1px 4px #000}
+.blab b{display:block;color:#f87171;font-family:var(--fd);font-size:10px;letter-spacing:.6px}
+.blab span{font-size:9px;color:#8aa0c2}
+/* Tooltip de neurona (clic) */
+#brain-tip{position:absolute;display:none;z-index:6;max-width:190px;background:rgba(9,14,26,.94);border:1px solid #2a3a59;
+  border-radius:10px;padding:8px 11px;font-size:11.5px;color:#e7ecf5;pointer-events:none;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+#brain-tip b{color:var(--gold-2)}
+/* HUD de entrenamiento (época/pérdida/precisión/LR + curva + botones) */
+.brain-hud{position:absolute;left:12px;bottom:12px;z-index:4;width:272px;max-width:calc(100% - 24px);
+  background:rgba(9,14,26,.74);backdrop-filter:blur(8px);border:1px solid #23314e;border-radius:13px;padding:10px 12px}
+.bh-metrics{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:11px;color:#9fb0c9;margin-bottom:7px}
+.bh-metrics b{color:#fff;font-family:var(--fd);font-variant-numeric:tabular-nums}
+#bh-curve{display:block;width:100%;height:60px;background:#0a1122;border:1px solid #1b2740;border-radius:7px}
+.bh-legend{display:flex;gap:14px;font-size:10px;color:#7f93b3;margin:5px 0 8px}
+.bh-legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.bh-btns{display:flex;gap:8px}
+.bh-btns button{flex:1;background:rgba(255,255,255,.06);border:1px solid #2a3a59;color:#e7ecf5;border-radius:8px;
+  padding:7px;font-size:11.5px;font-weight:700;cursor:pointer;transition:.2s}
+.bh-btns button:hover{border-color:var(--gold-2);background:var(--gold-2);color:#0B1220}
 .brain-card.firing .brain-stat .bs-dot{background:var(--gold-2);box-shadow:0 0 10px var(--gold-2);animation:bs-pulse 1s ease-in-out infinite}
 @keyframes bs-pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .brain-layers{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#64748b;font-weight:700}
@@ -253,8 +276,25 @@ a{color:inherit;text-decoration:none}
     <div class="brain-grid">
       <div class="brain-wrap">
         <canvas id="brain-canvas"></canvas>
+        <div id="brain-labels"></div>
+        <div id="brain-tip"></div>
         <div class="brain-overlay">
-          <div class="brain-stat"><span class="bs-dot"></span><span id="brain-state">Aprendiendo en vivo</span></div>
+          <div class="brain-stat"><span class="bs-dot"></span><span id="brain-state">Entrenando en vivo</span></div>
+          <div class="brain-hint">🖱️ Arrastra = girar 360° · rueda = zoom · Shift+arrastra = mover · clic en una neurona = ver sus datos</div>
+        </div>
+        <div class="brain-hud">
+          <div class="bh-metrics">
+            <span>Época <b id="bh-epoch">0</b></span><span>Pérdida <b id="bh-loss">—</b></span>
+            <span>Precisión <b id="bh-acc">—</b></span><span>LR <b id="bh-lr">—</b></span>
+            <span>Muertas <b id="bh-dead">0</b></span>
+          </div>
+          <canvas id="bh-curve" width="248" height="60"></canvas>
+          <div class="bh-legend"><span><i style="background:#3B82F6"></i>pérdida</span><span><i style="background:#22C55E"></i>precisión</span><span><i style="background:#64748b"></i>muertas</span></div>
+          <div class="bh-btns">
+            <button id="bh-toggle" onclick="brainToggle()">⏸ Pausar</button>
+            <button onclick="brainRestart()">↻ Reiniciar</button>
+            <button onclick="brainRevive()" title="Reinicializa los pesos de las neuronas muertas (He) para reactivarlas">✚ Revivir</button>
+          </div>
         </div>
         <div class="brain-meter"><div class="brain-meter-fill" id="brain-activity"></div></div>
       </div>
@@ -291,9 +331,9 @@ a{color:inherit;text-decoration:none}
   <div class="grid">
     <!-- PESOS Y SIGNOS · REGRESIÓN LOGÍSTICA -->
     <div class="card">
-      <h2><svg class="ic"><use href="#i-chart"/></svg> Pesos y signos · Regresión Logística</h2>
-      <div class="desc">Coeficiente β de cada variable: <b style="color:#16A34A">+</b> sube la aprobación,
-        <b style="color:#DC2626">−</b> la baja. La magnitud = cuánto pesa. β₀ (sesgo) = <span id="lc-intercept">—</span>.</div>
+      <h2><svg class="ic"><use href="#i-chart"/></svg> Pesos · Odds Ratios · Regresión Logística</h2>
+      <div class="desc"><b>Odds Ratio = exp(β)</b> por variable (peso real): <b style="color:#16A34A">×&gt;1</b> sube la aprobación,
+        <b style="color:#DC2626">×&lt;1</b> la baja, ×1 no influye. La barra = cuánto pesa. OR base (intercepto) = <span id="lc-intercept">—</span>.</div>
       <div class="chart-body" id="coef-chart"></div>
     </div>
     <!-- IMPORTANCIA DE VARIABLES · RANDOM FOREST -->
@@ -352,6 +392,21 @@ a{color:inherit;text-decoration:none}
   </div>
 
   <div class="grid">
+    <!-- IMPORTAR ENCUESTA (Google Forms / Microsoft Forms) -->
+    <div class="card">
+      <h2><svg class="ic"><use href="#i-upload"/></svg> Importar encuesta (Google/Microsoft Forms)</h2>
+      <div class="desc">Sube el CSV o Excel que exporta el formulario (respuestas → Descargar). Se detectan las columnas automáticamente por su encabezado.</div>
+      <div class="drop" id="svdrop" onclick="document.getElementById('svfile').click()">
+        <svg class="ic"><use href="#i-upload"/></svg>
+        <b>Haz clic para seleccionar</b>
+        <p id="svdrop-name">o arrastra el export aquí</p>
+        <div class="fmt"><span>.CSV</span><span>.XLSX</span></div>
+      </div>
+      <input type="file" id="svfile" accept=".csv,.xlsx,.xls" onchange="onSurveyFile(this.files[0])" style="display:none"/>
+      <div id="sv-import-result" style="margin-top:12px;font-size:13px;color:var(--muted-2)"></div>
+      <div id="sv-summary" style="margin-top:10px"></div>
+    </div>
+
     <!-- SUBIR + REENTRENAR -->
     <div class="card">
       <h2><svg class="ic"><use href="#i-upload"/></svg> Subir dataset y reentrenar</h2>
@@ -456,6 +511,9 @@ a{color:inherit;text-decoration:none}
         <svg class="ic"><use href="#i-download"/></svg> Exportar CSV</a>
       <a class="btn-mini" id="db-download" href="/api/admin/download_db">
         <svg class="ic"><use href="#i-database"/></svg> Descargar base SQL (.db)</a>
+      <button class="btn-mini" id="db-restore-btn" onclick="document.getElementById('db-restore-file').click()">
+        <svg class="ic"><use href="#i-upload"/></svg> Restaurar base SQL (.db)</button>
+      <input type="file" id="db-restore-file" style="display:none" accept=".db" onchange="restoreDb(this)"/>
       <button class="btn-mini gold" id="db-retrain" onclick="retrainFromDb()">
         <svg class="ic"><use href="#i-refresh"/></svg> Reentrenar con estos datos</button>
     </div>
@@ -464,15 +522,12 @@ a{color:inherit;text-decoration:none}
     <!-- Esquema SQL (vista web) + cómo cambiar a una base real -->
     <div class="db-schema" id="db-schema"></div>
     <details class="db-swap">
-      <summary>¿Cómo poner mi base de datos real?</summary>
+      <summary>¿Cómo poner mi base de datos real o guardarla en la nube?</summary>
       <ol>
-        <li><b>Inspeccionar:</b> descarga <code>janus.db</code> (botón de arriba) y ábrela con
-          <a href="https://sqlitebrowser.org" target="_blank" rel="noopener">DB Browser for SQLite</a>.</li>
-        <li><b>Opción A (recomendada):</b> sube tu dataset real en <i>Subir dataset y reentrenar</i>
-          (CSV/Excel con las columnas del modelo) → reentrena con datos reales.</li>
-        <li><b>Opción B (reemplazar la base):</b> cierra la app y reemplaza el archivo
-          <code id="db-path">data/janus.db</code> por tu SQLite (mismo esquema), o define la
-          variable <code>JNUS_DB_PATH</code> apuntando a tu archivo.</li>
+        <li><b>Respaldar y Cargar en la Nube (Google Drive, etc.):</b> puedes descargar el archivo SQLite completo <code>janus.db</code> usando el botón <i>Descargar base SQL (.db)</i> de arriba y subirlo a tu cuenta de Google Drive u otra nube para conservarlo seguro.</li>
+        <li><b>Restaurar en producción:</b> si tu servidor en la nube se reinicia o entra en suspensión y se limpia la base de datos (comportamiento habitual en servidores efímeros como Render gratis), simplemente usa el botón <i>Restaurar base SQL (.db)</i> para subir tu copia de seguridad de <code>janus.db</code> y recuperarás todas las evaluaciones e historial inmediatamente.</li>
+        <li><b>Inspeccionar:</b> descarga la base de datos y ábrela con <a href="https://sqlitebrowser.org" target="_blank" rel="noopener">DB Browser for SQLite</a> en tu PC.</li>
+        <li><b>Reentrenar con tu dataset:</b> sube tu dataset real en <i>Subir dataset y reentrenar</i> (CSV/Excel con las columnas del modelo).</li>
       </ol>
     </details>
 
@@ -790,12 +845,102 @@ async function retrainFromDb(){
   btn.innerHTML = '<svg class="ic"><use href="#i-refresh"/></svg> Reentrenar con estos datos';
   loadDb();
 }
+async function restoreDb(input){
+  if(!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  if(!confirm(`¿Estás seguro de que deseas restaurar la base de datos con el archivo "${file.name}"?\nEsta acción reemplazará permanentemente todos los datos actuales.`)){
+    input.value = '';
+    return;
+  }
+  
+  const msg = document.getElementById('db-msg');
+  msg.style.display = 'block';
+  msg.style.background = 'var(--gold-soft)';
+  msg.style.color = 'var(--slate)';
+  msg.textContent = 'Restaurando base de datos en caliente…';
+  
+  const fd = new FormData();
+  fd.append('file', file);
+  
+  try{
+    const r = await fetch('/api/admin/restore_db', {
+      method: 'POST',
+      body: fd
+    });
+    const d = await r.json();
+    if(d.error){
+      msg.style.background = '#FCEAEA';
+      msg.style.color = '#B91C1C';
+      msg.textContent = '⚠ '+d.error;
+    }else{
+      msg.style.background = '#E6F6ED';
+      msg.style.color = '#15803D';
+      msg.textContent = '✓ '+d.message;
+      // Recargar datos en el panel
+      if(typeof loadDb === 'function') loadDb();
+      if(typeof loadUsers === 'function') loadUsers();
+    }
+  }catch(e){
+    msg.style.background = '#FCEAEA';
+    msg.style.color = '#B91C1C';
+    msg.textContent = '⚠ Error al enviar: '+e.message;
+  }
+  input.value = '';
+}
+
 
 function onFile(f){
   if(!f) return;
   picked = f;
   document.getElementById('drop-name').textContent = f.name;
   document.getElementById('btn-train').disabled = false;
+}
+
+// ── Importar encuesta (Google Forms / Microsoft Forms) ──
+async function onSurveyFile(f){
+  if(!f) return;
+  document.getElementById('svdrop-name').textContent = f.name;
+  const res = document.getElementById('sv-import-result');
+  res.textContent = 'Importando ' + f.name + '…';
+  try{
+    const fd = new FormData(); fd.append('file', f);
+    const r = await fetch('/api/admin/import_survey', {method:'POST', body: fd});
+    const d = await r.json();
+    if(!r.ok || d.error){ res.innerHTML = '<span style="color:var(--red)">✗ '+(d.error||'Error al importar')+'</span>'; return; }
+    res.innerHTML = '<span style="color:var(--green)">✓ '+d.imported+' respuestas importadas</span>';
+    renderSurveySummary(d.stats);
+    if(typeof toast==='function') toast(d.imported+' respuestas importadas');
+  }catch(e){ res.innerHTML = '<span style="color:var(--red)">✗ '+e.message+'</span>'; }
+  document.getElementById('svfile').value = '';
+}
+function renderSurveySummary(s){
+  const box=document.getElementById('sv-summary'); if(!box || !s) return;
+  const pct = s.total ? Math.round(s.con_credito/s.total*100) : 0;
+  box.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted-2);margin-bottom:8px">
+      <span><b style="color:var(--ink)">${s.total}</b> respuestas</span>
+      <span><b style="color:var(--ink)">${pct}%</b> ya tienen/tuvieron crédito</span>
+    </div>
+    ${s.top_provincias && s.top_provincias.length ? '<div style="font-size:12.5px;color:var(--muted-2);margin-bottom:6px">Top provincias: '+s.top_provincias.map(p=>p.provincia+' ('+p.n+')').join(' · ')+'</div>' : ''}
+    <button class="btn btn-light" style="width:100%" onclick="loadSurveyAnswers()">Ver respuestas abiertas</button>
+    <div id="sv-answers" style="margin-top:10px"></div>`;
+}
+async function loadSurveySummary(){
+  try{ const r = await fetch('/api/admin/surveys?limit=1'); const d = await r.json();
+    if(d.ok) renderSurveySummary(d.stats); }catch(e){}
+}
+async function loadSurveyAnswers(){
+  const box=document.getElementById('sv-answers'); if(!box) return;
+  box.textContent='Cargando…';
+  try{
+    const r = await fetch('/api/admin/surveys?limit=100'); const d = await r.json();
+    const withText = (d.surveys||[]).filter(x=>x.sugerencia && x.sugerencia.trim());
+    if(!withText.length){ box.innerHTML = '<div style="font-size:13px;color:var(--muted-2)">Aún no hay respuestas con comentario.</div>'; return; }
+    box.innerHTML = withText.slice(0,30).map(x=>
+      `<div style="padding:9px 12px;background:var(--bg);border-radius:10px;margin-bottom:7px;font-size:13px">
+        <div style="color:var(--ink)">"${(x.sugerencia||'').replace(/</g,'&lt;')}"</div>
+        <div style="color:var(--muted-2);font-size:11px;margin-top:3px">${x.tipo_credito||'—'} · ${x.provincia||'—'}</div>
+      </div>`).join('');
+  }catch(e){ box.textContent='Error al cargar.'; }
 }
 
 function logLine(html){
@@ -938,16 +1083,28 @@ async function doRetrain(){
   }
 }
 
+let _seedRunning = false;
 async function doSeed(){
+  if(_seedRunning){ return; }        // evita reentrenamientos simultáneos (causa de "Failed to fetch")
+  _seedRunning = true;
   document.getElementById('log').innerHTML = '';
   tqdmInit();
-  logLine('<span class="gd">▸ Regenerando modelo demo...</span>');
+  logLine('<span class="gd">▸ Regenerando modelo demo... (entrena los 4 modelos, ~1 min, no cierres)</span>');
+  if(typeof Brain!=='undefined'){ Brain.firing(true); Brain.setActivity(1); Brain.burst(); }
   try{
     const r = await fetch('/api/admin/retrain_seed',{method:'POST'});
     const d = await r.json();
     if(d.error){ logLine('<span class="er">✗ '+d.error+'</span>'); tqdmDone(false); }
-    else{ logLine('<span class="ok">✓ '+d.message+' ('+d.version+')</span>'); tqdmDone(true); loadInfo(); }
-  }catch(e){ logLine('<span class="er">✗ '+e.message+'</span>'); tqdmDone(false); }
+    else{ logLine('<span class="ok">✓ '+d.message+' ('+d.version+')</span>'); tqdmDone(true);
+      loadInfo(); if(typeof loadLearning==='function') loadLearning(); if(typeof loadBrainMetrics==='function') loadBrainMetrics(); }
+  }catch(e){
+    const net = /fetch/i.test(e.message||'');
+    logLine('<span class="er">✗ '+(net?'Se interrumpió la conexión mientras entrenaba (~1 min). El modelo pudo haberse regenerado igual — recarga la página para verificar y vuelve a intentar sin cerrar la ventana.':e.message)+'</span>');
+    tqdmDone(false);
+  }finally{
+    _seedRunning = false;
+    if(typeof Brain!=='undefined') Brain.firing(false);
+  }
 }
 
 /* ════ BRAIN · red neuronal 3D real (Three.js / WebGL) ════
@@ -972,7 +1129,7 @@ const Brain = (function(){
         ctx.fillStyle='rgba(212,175,55,'+(.4+.3*act)+')'; ctx.beginPath(); ctx.arc(x,y,r,0,6.28); ctx.fill(); }
       requestAnimationFrame(fr); }
     rs(); window.addEventListener('resize',rs); requestAnimationFrame(fr);
-    return { setActivity(v){act=v;}, burst(){act=1;}, setMix(){}, setState(s){restState=s;setStateText(s);},
+    return { setActivity(v){act=v;}, burst(){act=1;}, setMix(){}, setInputLabels(){}, setState(s){restState=s;setStateText(s);},
       firing(on){ const c=document.querySelector('.brain-card'); if(c)c.classList.toggle('firing',!!on);
         const st=document.getElementById('brain-state'); if(st) st.textContent=on?'Reentrenando · ajustando pesos':restState; } };
   }
@@ -997,137 +1154,311 @@ const Brain = (function(){
     const tx=new THREE.Texture(c); tx.needsUpdate=true; return tx; }
   const TEX=disc();
 
-  // capas (conteos VISUALES; la arquitectura real 31→64→32→1 se muestra en Metodología)
-  const LAYERS=[{n:8,c:0x3B82F6},{n:16,c:0xC8A24B},{n:10,c:0xD4AF37},{n:1,c:0x16A34A}];
-  const GAPX=2.4, x0=-(LAYERS.length-1)*GAPX/2, ySpan=3.4;
-  const nodes=[];                                  // {v:Vector3, layer}
-  LAYERS.forEach((L,li)=>{
-    const x=x0+li*GAPX;
-    for(let i=0;i<L.n;i++){
-      const y = L.n>1 ? (-ySpan/2 + ySpan*i/(L.n-1)) : 0;
-      const z = (Math.random()-0.5)*1.1;
-      nodes.push({v:new THREE.Vector3(x,y,z), layer:li});
-    }
-  });
-  // Puntos-nodo con color por capa
-  const npos=new Float32Array(nodes.length*3), ncol=new Float32Array(nodes.length*3);
-  nodes.forEach((nd,i)=>{ npos[i*3]=nd.v.x; npos[i*3+1]=nd.v.y; npos[i*3+2]=nd.v.z;
-    const col=new THREE.Color(LAYERS[nd.layer].c); ncol[i*3]=col.r; ncol[i*3+1]=col.g; ncol[i*3+2]=col.b; });
-  const ngeo=new THREE.BufferGeometry();
-  ngeo.setAttribute('position',new THREE.BufferAttribute(npos,3));
-  ngeo.setAttribute('color',new THREE.BufferAttribute(ncol,3));
-  const nmat=new THREE.PointsMaterial({size:0.55,map:TEX,vertexColors:true,transparent:true,
-    depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
-  group.add(new THREE.Points(ngeo,nmat));
+  // ══ RED NEURONAL REAL que ENTRENA en el navegador (backprop en vivo, no animación) ══
+  scene.fog=new THREE.FogExp2(0x070d1a,0.013);
+  // ── Variables REALES de entrada del modelo (35 features tras one-hot) ──
+  // Incluye las NUEVAS tasa_interes y plazo_meses (probabilidad por cooperativa).
+  const NUM_NICE={edad:'Edad',ingresos_mensuales:'Ingresos mensuales',cargas_familiares:'Cargas familiares',
+    creditos_activos:'Créditos activos',monto_solicitado:'Monto solicitado',antiguedad_laboral:'Antigüedad laboral',
+    tasa_interes:'Tasa de interés',plazo_meses:'Plazo (meses)'};
+  const CAT_NICE={sexo:'Sexo',educacion:'Educación',historial_pagos:'Historial de pagos',
+    institucion:'Institución',tipo_credito:'Tipo de crédito',situacion_laboral:'Situación laboral'};
+  const NEW_COLS=['tasa_interes','plazo_meses'];
+  function friendlyCol(c){ if(NUM_NICE[c]) return NUM_NICE[c];
+    for(const b in CAT_NICE) if(c.indexOf(b+'_')===0) return CAT_NICE[b]+': '+c.slice(b.length+1).replace(/_/g,' ');
+    return c; }
+  let INPUT_COLS=['edad','ingresos_mensuales','cargas_familiares','creditos_activos','monto_solicitado',
+    'antiguedad_laboral','tasa_interes','plazo_meses','sexo_Femenino','sexo_Masculino','educacion_Posgrado',
+    'educacion_Primaria','educacion_Secundaria','educacion_Universitaria','historial_pagos_Bueno',
+    'historial_pagos_Excelente','historial_pagos_Malo','historial_pagos_Regular','institucion_Banco Guayaquil',
+    'institucion_Banco Pichincha','institucion_Banco del Pacífico','institucion_Cooperativa JEP',
+    'institucion_Produbanco','tipo_credito_Emprendimiento','tipo_credito_Hipotecario','tipo_credito_Microcrédito',
+    'tipo_credito_Personal','tipo_credito_Productivo','tipo_credito_Vehicular','situacion_laboral_Desempleado',
+    'situacion_laboral_Empleado Privado','situacion_laboral_Empleado Público','situacion_laboral_Emprendedor',
+    'situacion_laboral_Negocio Propio','situacion_laboral_Trabajo Informal'];
+  let INPUT_LABELS=INPUT_COLS.map(friendlyCol);
+  const SIZES=[INPUT_COLS.length,30,26,22,1];
+  const LNAME=['ENTRADA','OCULTA 1','OCULTA 2','OCULTA 3','SALIDA'];
+  const LACT =['—','GELU','GELU','GELU','Sigmoide'];
+  const LCOL =[0x38BDF8,0xC8A24B,0xD4AF37,0xFBBF24,0x22C55E];
+  const gelu=z=>0.5*z*(1+Math.tanh(0.7978845608*(z+0.044715*z*z*z)));
+  const geluD=z=>{const c=0.7978845608,u=c*(z+0.044715*z*z*z),th=Math.tanh(u),du=c*(1+3*0.044715*z*z);return 0.5*(1+th)+0.5*z*(1-th*th)*du;};
+  const sigm=z=>1/(1+Math.exp(-Math.max(-30,Math.min(30,z))));
+  function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2831853*v);}
+  let W_=[],B_=[];
+  function initNet(){ W_=[];B_=[]; for(let l=1;l<SIZES.length;l++){const nin=SIZES[l-1],nout=SIZES[l],s=Math.sqrt(2/nin);
+    const w=new Float32Array(nin*nout); for(let i=0;i<w.length;i++) w[i]=randn()*s; W_.push(w); B_.push(new Float32Array(nout)); } }
+  initNet();
+  function forwardFull(x){ const a=[x], z=[null];
+    for(let l=0;l<W_.length;l++){ const nin=SIZES[l],nout=SIZES[l+1],w=W_[l],b=B_[l],prev=a[l];
+      const zz=new Float32Array(nout), aa=new Float32Array(nout);
+      for(let j=0;j<nout;j++){ let s=b[j]; for(let i=0;i<nin;i++) s+=prev[i]*w[i*nout+j]; zz[j]=s;
+        aa[j]=(l<W_.length-1)?gelu(s):sigm(s); }
+      z.push(zz); a.push(aa); }
+    return {a,z}; }
+  // dataset sintético separable → la red SÍ aprende (loss baja, accuracy sube)
+  const DIM=SIZES[0], NS=420, DX=[], DY=[], _wt=[]; for(let i=0;i<DIM;i++) _wt.push(randn());
+  for(let s=0;s<NS;s++){ const x=new Float32Array(DIM); let z=0;
+    for(let i=0;i<DIM;i++){ x[i]=randn()*0.85; z+=x[i]*_wt[i]; }
+    let lab=(1/(1+Math.exp(-z*0.42)))>Math.random()?1:0;
+    if(Math.random()<0.12) lab=1-lab;              // ruido → aprendizaje gradual (no 100% instantáneo)
+    DX.push(x); DY.push(lab); }
+  let epoch=0, lr=0.06, loss=1, acc=0, paused=false, lossH=[], accH=[], selNode=-1;
+  function trainEpoch(){ const N=DX.length, L=W_.length, BS=20; let bl=0, correct=0;
+    const idx=[...Array(N).keys()]; for(let i=N-1;i>0;i--){const j=(Math.random()*(i+1))|0;[idx[i],idx[j]]=[idx[j],idx[i]];}
+    for(let b0=0;b0<N;b0+=BS){ const gW=W_.map(w=>new Float32Array(w.length)), gB=B_.map(b=>new Float32Array(b.length)); let m=0;
+      for(let bi=b0;bi<Math.min(b0+BS,N);bi++){ const s=idx[bi]; m++; const R=forwardFull(DX[s]), a=R.a, z=R.z, y=DY[s];
+        const p=Math.min(1-1e-7,Math.max(1e-7,a[L][0])); bl+=-(y*Math.log(p)+(1-y)*Math.log(1-p)); if((p>=.5?1:0)===y)correct++;
+        let delta=new Float32Array([a[L][0]-y]);
+        for(let l=L;l>=1;l--){ const nin=SIZES[l-1],nout=SIZES[l],w=W_[l-1],aprev=a[l-1];
+          for(let j=0;j<nout;j++){ gB[l-1][j]+=delta[j]; for(let i=0;i<nin;i++) gW[l-1][i*nout+j]+=aprev[i]*delta[j]; }
+          if(l>1){ const nd=new Float32Array(nin);
+            for(let i=0;i<nin;i++){ let s2=0; for(let j=0;j<nout;j++) s2+=w[i*nout+j]*delta[j]; nd[i]=s2*geluD(z[l-1][i]); }
+            delta=nd; } } }
+      const sc=lr/Math.max(1,m);
+      for(let l=0;l<L;l++){ const w=W_[l],gw=gW[l]; for(let k=0;k<w.length;k++) w[k]-=sc*gw[k];
+        const b=B_[l],gb=gB[l]; for(let k=0;k<b.length;k++) b[k]-=sc*gb[k]; } }
+    epoch++; loss=bl/N; acc=correct/N; lr*=0.9992;
+    lossH.push(loss); accH.push(acc); if(lossH.length>240){lossH.shift();accH.shift();} }
 
-  // Conexiones entre capas consecutivas (subset) + lista para señales
-  const conns=[]; const lp=[];
-  for(let li=0; li<LAYERS.length-1; li++){
-    const A=nodes.filter(n=>n.layer===li), B=nodes.filter(n=>n.layer===li+1);
-    for(const a of A){ const k=Math.min(B.length, 4);
-      for(let j=0;j<k;j++){ const b=B[(Math.floor(Math.random()*B.length))];
-        conns.push([a.v,b.v]); lp.push(a.v.x,a.v.y,a.v.z, b.v.x,b.v.y,b.v.z); } }
-  }
-  const lgeo=new THREE.BufferGeometry();
-  lgeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lp),3));
-  const lmat=new THREE.LineBasicMaterial({color:0x4a6090,transparent:true,opacity:0.16,
-    blending:THREE.AdditiveBlending,depthWrite:false});
-  group.add(new THREE.LineSegments(lgeo,lmat));
+  // ── Geometría en COLUMNAS (estilo referencia), en espacio 3D ──
+  const off=[0]; for(let l=0;l<SIZES.length;l++) off.push(off[l]+SIZES[l]);
+  const NN=off[SIZES.length], GAPX=5.4, colH=10;
+  const nodes=new Array(NN);
+  for(let li=0;li<SIZES.length;li++){ const n=SIZES[li], x=(li-(SIZES.length-1)/2)*GAPX;
+    for(let i=0;i<n;i++){ const y=n>1?(colH/2-colH*i/(n-1)):0; const z=Math.sin(i*1.7+li)*0.95;
+      nodes[off[li]+i]={x,y,z,li,ii:i}; } }
+  // Las entradas nuevas (tasa/plazo) se pintan fucsia para identificarlas a simple vista
+  const NEWCOL=0xE879F9;
+  const _c=new THREE.Color(),
+    baseCol=nodes.map(n=>new THREE.Color((n.li===0 && NEW_COLS.indexOf(INPUT_COLS[n.ii])>=0)?NEWCOL:LCOL[n.li]));
 
-  // Señales que viajan por las conexiones (forward pass)
-  const MIXC={ok:new THREE.Color(0x4ade80), med:new THREE.Color(0xfbbf24), bad:new THREE.Color(0xf87171)};
-  let mix={ok:0.62,med:0.26,bad:0.12};
-  function sigColor(){ const r=Math.random(); return r<mix.ok?MIXC.ok:(r<mix.ok+mix.med?MIXC.med:MIXC.bad); }
-  const S=150, sig=[];
-  const spos=new Float32Array(S*3), scol=new Float32Array(S*3);
-  function spawn(i){ const ci=Math.floor(Math.random()*conns.length); const c=sigColor();
-    sig[i]={ci, t:Math.random(), sp:0.006+Math.random()*0.012};
-    scol[i*3]=c.r; scol[i*3+1]=c.g; scol[i*3+2]=c.b; }
+  // Neuronas: InstancedMesh (esferas 3D)
+  const inst=new THREE.InstancedMesh(new THREE.SphereGeometry(0.14,8,8), new THREE.MeshBasicMaterial({toneMapped:false}), NN);
+  const _d=new THREE.Object3D();
+  for(let i=0;i<NN;i++){ const nd=nodes[i]; _d.position.set(nd.x,nd.y,nd.z); _d.updateMatrix(); inst.setMatrixAt(i,_d.matrix);
+    if(inst.setColorAt) inst.setColorAt(i,baseCol[i]); }
+  inst.instanceMatrix.needsUpdate=true; if(inst.instanceColor) inst.instanceColor.needsUpdate=true;
+  group.add(inst);
+  // halos glow
+  const gpos=new Float32Array(NN*3), gcol=new Float32Array(NN*3);
+  for(let i=0;i<NN;i++){ const nd=nodes[i]; gpos[i*3]=nd.x;gpos[i*3+1]=nd.y;gpos[i*3+2]=nd.z; gcol[i*3]=baseCol[i].r;gcol[i*3+1]=baseCol[i].g;gcol[i*3+2]=baseCol[i].b; }
+  const ggeo=new THREE.BufferGeometry(); ggeo.setAttribute('position',new THREE.BufferAttribute(gpos,3)); ggeo.setAttribute('color',new THREE.BufferAttribute(gcol,3));
+  const gmat=new THREE.PointsMaterial({size:0.7,map:TEX,vertexColors:true,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+  group.add(new THREE.Points(ggeo,gmat));
+
+  // Conexiones como CURVAS fluidas (subconjunto muestreado); cada curva es un PESO REAL
+  const SEG=6;                                    // segmentos por conexión (suavidad)
+  function _rnd(a,b){ const r=Math.sin((a+1)*12.9898+(b+1)*78.233)*43758.5453; return r-Math.floor(r); }
+  function sampleK(n,k,seedi){ const arr=[...Array(n).keys()];
+    for(let m=n-1;m>0;m--){ const j=(_rnd(seedi,m)*(m+1))|0; const tmp=arr[m];arr[m]=arr[j];arr[j]=tmp; }
+    return arr.slice(0,Math.min(k,n)); }
+  function bezierPts(a,b){ const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,mz=(a.z+b.z)/2;
+    const len=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)||1, bulge=len*0.17*((a.ii%2)?1:-1);
+    const cx=mx, cy=my+bulge, cz=mz+((a.ii%3)-1)*0.6, pts=[];
+    for(let s=0;s<=SEG;s++){ const u=s/SEG, iu=1-u;
+      pts.push({x:iu*iu*a.x+2*iu*u*cx+u*u*b.x, y:iu*iu*a.y+2*iu*u*cy+u*u*b.y, z:iu*iu*a.z+2*iu*u*cz+u*u*b.z}); }
+    return pts; }
+  const CN=[];  // {a,b (global), li, wi, pts}
+  for(let li=0; li<SIZES.length-1; li++){ const nin=SIZES[li], nout=SIZES[li+1], last=(li===SIZES.length-2);
+    for(let i=0;i<nin;i++){ const tg=last?[...Array(nout).keys()]:sampleK(nout,6,off[li]+i);
+      for(const j of tg){ const a=nodes[off[li]+i], b=nodes[off[li+1]+j];
+        CN.push({a:off[li]+i, b:off[li+1]+j, li, wi:i*nout+j, pts:bezierPts(a,b)}); } } }
+  const CE=CN.length, cpos=new Float32Array(CE*SEG*6), ccol=new Float32Array(CE*SEG*6);
+  for(let e=0;e<CE;e++){ const pts=CN[e].pts;
+    for(let s=0;s<SEG;s++){ const o=(e*SEG+s)*6, p=pts[s], q=pts[s+1];
+      cpos[o]=p.x;cpos[o+1]=p.y;cpos[o+2]=p.z; cpos[o+3]=q.x;cpos[o+4]=q.y;cpos[o+5]=q.z; } }
+  const cgeo=new THREE.BufferGeometry(); cgeo.setAttribute('position',new THREE.BufferAttribute(cpos,3)); cgeo.setAttribute('color',new THREE.BufferAttribute(ccol,3));
+  const cmat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.6,blending:THREE.AdditiveBlending,depthWrite:false});
+  group.add(new THREE.LineSegments(cgeo,cmat));
+  const POS=new THREE.Color(0x34d399), NEG=new THREE.Color(0xf87171), DIMc=new THREE.Color(0x162238), SELc=new THREE.Color(0xffd76a), DEADc=new THREE.Color(0x64748b);
+  let deadSet=new Set(), deadCount=0;              // neuronas muertas (activación ~0)
+  // Color de cada conexión según el PESO real (verde + / rojo −, intensidad = |peso|); resalta la neurona seleccionada
+  function refreshConns(){ let maxw=1e-4; for(let l=0;l<W_.length;l++){ const w=W_[l]; for(let k=0;k<w.length;k++){ const aw=Math.abs(w[k]); if(aw>maxw)maxw=aw; } }
+    for(let e=0;e<CE;e++){ const c=CN[e], wv=W_[c.li][c.wi], mag=Math.min(1,Math.abs(wv)/maxw);
+      let col, inten;
+      if(selNode>=0){ const on=(c.a===selNode||c.b===selNode); col=on?SELc:DIMc; inten=on?1:0.22; }
+      else if(deadSet.has(c.a)||deadSet.has(c.b)){ col=DEADc; inten=0.5; }   // conexión de neurona muerta
+      else { col=(wv>=0?POS:NEG); inten=0.12+mag*0.9; }
+      const r=col.r*inten,g=col.g*inten,bb=col.b*inten;
+      for(let s=0;s<SEG;s++){ const o=(e*SEG+s)*6;
+        ccol[o]=r;ccol[o+1]=g;ccol[o+2]=bb; ccol[o+3]=r;ccol[o+4]=g;ccol[o+5]=bb; } }
+    cgeo.attributes.color.needsUpdate=true; }
+
+  // Pulsos = activaciones propagándose por las conexiones
+  const S=Math.min(700,CE), sig=[], spos=new Float32Array(S*3), scol=new Float32Array(S*3);
+  const PC=[new THREE.Color(0x4ade80),new THREE.Color(0xfbbf24),new THREE.Color(0xf87171)];
+  function spawn(i){ const e=(Math.random()*CE)|0; sig[i]={e,t:Math.random(),sp:0.006+Math.random()*0.02};
+    const c=PC[(Math.random()*3)|0]; scol[i*3]=c.r;scol[i*3+1]=c.g;scol[i*3+2]=c.b; }
   for(let i=0;i<S;i++) spawn(i);
-  const sgeo=new THREE.BufferGeometry();
-  sgeo.setAttribute('position',new THREE.BufferAttribute(spos,3));
-  sgeo.setAttribute('color',new THREE.BufferAttribute(scol,3));
-  const smat=new THREE.PointsMaterial({size:0.42,map:TEX,vertexColors:true,transparent:true,
-    opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
-  const sigPts=new THREE.Points(sgeo,smat); group.add(sigPts);
+  const sgeo=new THREE.BufferGeometry(); sgeo.setAttribute('position',new THREE.BufferAttribute(spos,3)); sgeo.setAttribute('color',new THREE.BufferAttribute(scol,3));
+  const smat=new THREE.PointsMaterial({size:0.42,map:TEX,vertexColors:true,transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true});
+  group.add(new THREE.Points(sgeo,smat));
+  // fondo de partículas → profundidad (como la referencia)
+  const BG=240, bpos=new Float32Array(BG*3); for(let i=0;i<BG;i++){ bpos[i*3]=(Math.random()-0.5)*64; bpos[i*3+1]=(Math.random()-0.5)*40; bpos[i*3+2]=(Math.random()-0.5)*64; }
+  const bgeo=new THREE.BufferGeometry(); bgeo.setAttribute('position',new THREE.BufferAttribute(bpos,3));
+  scene.add(new THREE.Points(bgeo,new THREE.PointsMaterial({size:0.09,color:0x33507a,transparent:true,opacity:0.5})));
+  // activación mostrada (forward de una muestra) → brillo de neuronas + clic
+  let showIdx=0, showA=forwardFull(DX[0]).a;
 
-  let activity=0.34, targetAct=0.34, theta=0, t=0;
-  function frame(){
-    t+=0.016; activity+=(targetAct-activity)*0.05;
-    // cámara orbital suave
-    theta+=0.0016+activity*0.0026;
-    const R=9.2 - activity*0.8;
-    camera.position.set(Math.sin(theta)*2.6, 1.1+Math.sin(t*0.4)*0.4, R);
-    camera.lookAt(0,0,0);
-    // pulso de nodos + glow de conexiones con la actividad
-    nmat.size=0.5+0.12*Math.sin(t*2.2)+activity*0.18;
-    nmat.opacity=0.85;
-    lmat.opacity=0.10+activity*0.16;
-    smat.size=0.34+activity*0.30;
-    // avanzar señales por sus conexiones
-    for(let i=0;i<S;i++){ const s=sig[i]; s.t+=s.sp*(0.4+activity*2.2);
-      if(s.t>=1){ spawn(i); continue; }
-      const c=conns[s.ci]; const a=c[0], b=c[1];
-      spos[i*3]  =a.x+(b.x-a.x)*s.t;
-      spos[i*3+1]=a.y+(b.y-a.y)*s.t;
-      spos[i*3+2]=a.z+(b.z-a.z)*s.t;
-    }
+  // ── Neuronas muertas: activación ~0 para (casi) todas las entradas (GELU saturada) ──
+  function computeDead(){ const cnt=Math.min(DX.length,120), acc=SIZES.map(n=>new Float32Array(n));
+    for(let s=0;s<cnt;s++){ const a=forwardFull(DX[(s*7)%DX.length]).a;
+      for(let li=1;li<SIZES.length-1;li++){ const A=a[li]; for(let i=0;i<SIZES[li];i++) acc[li][i]+=Math.abs(A[i]); } }
+    const ds=new Set();
+    for(let li=1;li<SIZES.length-1;li++){ for(let i=0;i<SIZES[li];i++){ if(acc[li][i]/cnt < 0.02) ds.add(off[li]+i); } }
+    deadSet=ds; deadCount=ds.size; return deadCount; }
+  // Revivir = reinicializar los pesos (He) de las neuronas muertas → vuelven a aprender
+  function reviveDead(){ deadSet.forEach(gi=>{ const nd=nodes[gi], li=nd.li, i=nd.ii;
+      const nin=SIZES[li-1], nout=SIZES[li], sIn=Math.sqrt(2/nin);
+      for(let k=0;k<nin;k++) W_[li-1][k*nout+i]=randn()*sIn;      // pesos de entrada nuevos (He)
+      B_[li-1][i]=0.01;                                          // sesgo + pequeño → evita re-morir
+      if(li<W_.length){ const nout2=SIZES[li+1], sOut=Math.sqrt(2/SIZES[li]);
+        for(let j=0;j<nout2;j++) W_[li][i*nout2+j]=randn()*sOut; } });   // pesos de salida nuevos
+    computeDead(); refreshConns(); }
+
+  // ── Interacción: CLIC en neurona (raycast) → id, capa, activación; resalta sus conexiones ──
+  const ray=new THREE.Raycaster();
+  function pickAt(ev){ const r=cv.getBoundingClientRect();
+    const nx=((ev.clientX-r.left)/r.width)*2-1, ny=-((ev.clientY-r.top)/r.height)*2+1;
+    ray.setFromCamera({x:nx,y:ny}, camera); const hit=ray.intersectObject(inst);
+    if(hit.length && hit[0].instanceId!=null){ selNode=hit[0].instanceId; showTip(selNode, ev); }
+    else { selNode=-1; hideTip(); }
+    refreshConns(); }
+  function showTip(k,ev){ const nd=nodes[k]; const av=(showA[nd.li]&&showA[nd.li][nd.ii]!=null)?showA[nd.li][nd.ii]:0;
+    const tip=document.getElementById('brain-tip'); if(!tip) return; const r=cv.getBoundingClientRect();
+    const feat = nd.li===0
+      ? `<br>Variable: <b>${INPUT_LABELS[nd.ii]||('x'+(nd.ii+1))}</b>`
+        + (NEW_COLS.indexOf(INPUT_COLS[nd.ii])>=0?` <span style="color:#E879F9">★ nueva · varía por cooperativa</span>`:'')
+      : '';
+    tip.innerHTML=`<b>${LNAME[nd.li]}</b> · neurona <b>N${nd.ii+1}</b>${feat}<br>id <b>L${nd.li}·${nd.ii+1}</b> · activación <b>${av.toFixed(3)}</b><br><span style="color:#8aa0c2">Solo se resaltan sus conexiones (entra ↔ sale)</span>`;
+    tip.style.display='block'; tip.style.left=Math.min(r.width-178,(ev.clientX-r.left)+12)+'px'; tip.style.top=Math.min(r.height-72,(ev.clientY-r.top)+12)+'px'; }
+  function hideTip(){ const t=document.getElementById('brain-tip'); if(t) t.style.display='none'; }
+
+  // ── Controles: órbita 360° (arrastrar) · zoom (rueda) · pan (Shift/clic derecho) ──
+  let t=0, theta=0.5, phi=1.3, radius=34, idle=0;
+  const target=new THREE.Vector3(0,0,0);
+  let dragging=false, panning=false, lx=0, ly=0, moved=0;
+  cv.style.cursor='grab'; cv.style.touchAction='none';
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  cv.addEventListener('pointerdown',e=>{ dragging=true; panning=e.shiftKey||e.button===2; idle=0; moved=0; lx=e.clientX; ly=e.clientY; cv.style.cursor='grabbing'; try{cv.setPointerCapture(e.pointerId);}catch(_){} });
+  cv.addEventListener('pointermove',e=>{ if(!dragging) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; idle=0; moved+=Math.abs(dx)+Math.abs(dy);
+    if(panning){ const s=radius*0.0016; target.x-=dx*s*Math.cos(theta); target.z-=dx*s*Math.sin(theta); target.y+=dy*s; }
+    else { theta-=dx*0.006; phi=Math.max(0.15,Math.min(Math.PI-0.15, phi-dy*0.006)); } });
+  cv.addEventListener('pointerup',e=>{ dragging=false; panning=false; cv.style.cursor='grab'; if(moved<5) pickAt(e); });
+  cv.addEventListener('pointerleave',()=>{ dragging=false; panning=false; cv.style.cursor='grab'; });
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); radius=Math.max(12,Math.min(82, radius*(1+Math.sign(e.deltaY)*0.09))); idle=0; },{passive:false});
+
+  // ── HUD: época / pérdida / precisión / LR + curva viva de aprendizaje ──
+  function updHUD(){ const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+    set('bh-epoch',epoch); set('bh-loss',loss.toFixed(3)); set('bh-acc',Math.round(acc*100)+'%'); set('bh-lr',lr.toFixed(4)); set('bh-dead',deadCount);
+    const cvv=document.getElementById('bh-curve'); if(cvv){ const g=cvv.getContext('2d'), w=cvv.width, h=cvv.height; g.clearRect(0,0,w,h);
+      if(lossH.length>1){ const n=lossH.length, mx=Math.max(...lossH,0.001);
+        g.strokeStyle='#3B82F6'; g.lineWidth=2; g.beginPath(); lossH.forEach((v,i)=>{const x=i/(n-1)*w, y=h-(v/mx)*(h-6)-3; i?g.lineTo(x,y):g.moveTo(x,y);}); g.stroke();
+        g.strokeStyle='#22C55E'; g.beginPath(); accH.forEach((v,i)=>{const x=i/(n-1)*w, y=h-v*(h-6)-3; i?g.lineTo(x,y):g.moveTo(x,y);}); g.stroke(); } } }
+
+  // ── Etiquetas de capa flotantes (proyectadas), estilo referencia ──
+  const labs=document.getElementById('brain-labels'), labEls=[];
+  if(labs){ labs.innerHTML=''; for(let li=0;li<SIZES.length;li++){ const d=document.createElement('div'); d.className='blab';
+    d.innerHTML=`<b>${LNAME[li]}</b><span>${SIZES[li]} neuronas · ${li===0?'variables reales':LACT[li]}</span>`; labs.appendChild(d); labEls.push(d); } }
+  const _pv=new THREE.Vector3();
+  function placeLabels(){ for(let li=0;li<SIZES.length;li++){ const el=labEls[li]; if(!el) continue; const top=nodes[off[li]];
+    _pv.set(top.x,top.y+1.2,top.z).project(camera);
+    if(_pv.z>1||_pv.z<-1){ el.style.display='none'; continue; } el.style.display='block';
+    el.style.left=((_pv.x*0.5+0.5)*W)+'px'; el.style.top=((-_pv.y*0.5+0.5)*H)+'px'; } }
+
+  let fc=0;
+  function frame(){ t+=0.016; idle+=0.016; fc++;
+    if(!paused && fc%2===0){ trainEpoch();
+      if(epoch%2===0){ showIdx=(showIdx+3)%DX.length; showA=forwardFull(DX[showIdx]).a; }
+      if(epoch%8===0) computeDead();                   // detectar neuronas muertas periódicamente
+      if(epoch%4===0 && selNode<0) refreshConns();     // los pesos cambian → colores/intensidad cambian
+      updHUD(); }
+    if(!dragging && idle>1.2) theta+=0.0042;            // auto-giro visible al estar quieto (más vivo)
+    const sp=Math.sin(phi);
+    camera.position.set(target.x+radius*sp*Math.cos(theta), target.y+radius*Math.cos(phi), target.z+radius*sp*Math.sin(theta));
+    camera.lookAt(target);
+    // Respiración: el cerebro late suavemente para sentirse vivo aún en reposo
+    const breath=1+0.018*Math.sin(t*1.5); group.scale.set(breath,breath,breath);
+    group.rotation.z=0.02*Math.sin(t*0.6);
+    if(inst.setColorAt){ for(let i=0;i<NN;i++){ const nd=nodes[i];
+      if(deadSet.has(i)){ _c.copy(DEADc).multiplyScalar(i===selNode?1.6:0.7); inst.setColorAt(i,_c); continue; }  // muerta → gris
+      const av=(showA[nd.li]&&showA[nd.li][nd.ii]!=null)?showA[nd.li][nd.ii]:0.3;
+      const b=0.4+Math.min(1,Math.abs(av))*0.9; _c.copy(baseCol[i]).multiplyScalar(i===selNode?1.8:b); inst.setColorAt(i,_c); }
+      inst.instanceColor.needsUpdate=true; }
+    gmat.opacity=0.42+0.08*Math.sin(t*2);
+    for(let i=0;i<S;i++){ const s=sig[i]; s.t+=s.sp*(paused?0.5:1.7); if(s.t>=1){ spawn(i); continue; }
+      const pts=CN[s.e].pts, u=s.t*SEG; let si=u|0; if(si>=SEG) si=SEG-1; const f=u-si, p=pts[si], q=pts[si+1];
+      spos[i*3]=p.x+(q.x-p.x)*f; spos[i*3+1]=p.y+(q.y-p.y)*f; spos[i*3+2]=p.z+(q.z-p.z)*f; }
     sgeo.attributes.position.needsUpdate=true;
-    sgeo.attributes.color.needsUpdate=true;
+    placeLabels();
     renderer.render(scene,camera);
     requestAnimationFrame(frame);
   }
-  size(); window.addEventListener('resize',size); requestAnimationFrame(frame);
+  refreshConns(); updHUD(); size(); window.addEventListener('resize',size); requestAnimationFrame(frame);
 
   return {
-    setActivity(v){ targetAct=Math.max(0.2,Math.min(1,v)); },
-    burst(){ targetAct=1; setTimeout(()=>{ targetAct=Math.max(0.34,targetAct*0.6); },1400); },
-    setMix(m){ if(m) mix=m; },
+    setActivity(){}, setMix(){},
+    burst(){ for(let i=0;i<50;i++) spawn((Math.random()*S)|0); },
     setState(s){ if(s) restState=s; setStateText(s); },
-    firing(on){
-      const card=document.querySelector('.brain-card');
-      if(card) card.classList.toggle('firing',!!on);
-      const st=document.getElementById('brain-state');
-      if(st) st.textContent = on ? 'Reentrenando · ajustando pesos' : restState;
-    }
+    firing(on){ const card=document.querySelector('.brain-card'); if(card) card.classList.toggle('firing',!!on);
+      const st=document.getElementById('brain-state'); if(st) st.textContent=on?'Reentrenando el modelo real…':restState; },
+    pause(){ paused=true; }, resume(){ paused=false; }, toggle(){ paused=!paused; return paused; },
+    revive(){ return reviveDead(); },
+    // Sincroniza las etiquetas de las neuronas de ENTRADA con las columnas reales del bundle
+    setInputLabels(cols){ if(Array.isArray(cols) && cols.length===SIZES[0]){ INPUT_COLS=cols; INPUT_LABELS=cols.map(friendlyCol); } },
+    restart(){ initNet(); epoch=0; lr=0.06; loss=1; acc=0; lossH=[]; accH=[]; selNode=-1; deadSet=new Set(); deadCount=0; hideTip(); refreshConns(); updHUD(); paused=false; }
   };
 })();
+// Botones del HUD (funciones globales para onclick)
+function brainToggle(){ if(typeof Brain==='undefined') return; const p=Brain.toggle(); const b=document.getElementById('bh-toggle'); if(b) b.textContent=p?'▶ Continuar':'⏸ Pausar'; }
+function brainRestart(){ if(typeof Brain==='undefined') return; Brain.restart(); const b=document.getElementById('bh-toggle'); if(b) b.textContent='⏸ Pausar'; }
+function brainRevive(){ if(typeof Brain==='undefined'||!Brain.revive) return; const n=Brain.revive();
+  const d=document.getElementById('bh-dead'); if(d) d.textContent='0';
+  if(typeof toast==='function') toast(n?('Revividas '+n+' neuronas muertas'):'No hay neuronas muertas'); }
 
 /* ── Métricas honestas del cerebro (precisión / error / datos / le falta) ── */
+let _lastEvalTotal = null;   // para detectar nuevas evaluaciones (uso de la app)
 async function loadBrainMetrics(){
   try{
     const [mi, ds] = await Promise.all([
       fetch('/api/model_info').then(r=>r.json()).catch(()=>({})),
       fetch('/api/admin/db_stats').then(r=>r.json()).catch(()=>({}))
     ]);
-    const TARGET=0.90, THRESH=50;
+    const TARGET=0.90, THRESH=50, DATA_GOAL=10000;      // meta de datos: 10.000 registros
+    if(typeof Brain!=='undefined' && Brain.setInputLabels) Brain.setInputLabels(mi.columns||[]);
     const acc = +(mi.best_accuracy||0);                 // 0..1
     const err = Math.max(0,1-acc);
     const real = +(ds.total_evaluaciones||0);
     const labeled = +(ds.etiquetados_real||0);
+    // Reacción del cerebro cuando se USA la app (llegan nuevas evaluaciones)
+    if(_lastEvalTotal!=null && real>_lastEvalTotal){ Brain.burst(); }
+    _lastEvalTotal = real;
     const setBar=(id,pct)=>{ const el=document.getElementById(id); if(el) el.style.width=Math.max(0,Math.min(100,pct))+'%'; };
     const setTxt=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
     // Precisión / Equivocación
     setTxt('bm-acc', acc?Math.round(acc*100)+'%':'—'); setBar('bm-acc-bar', acc*100);
     setTxt('bm-err', acc?Math.round(err*100)+'%':'—'); setBar('bm-err-bar', err*100);
-    // Datos reales recolectados (progreso hacia el umbral de reentrenamiento)
+    // Datos reales recolectados (progreso hacia la META de 10.000 registros)
+    const dataPct = Math.min(100, real/DATA_GOAL*100);
     setTxt('bm-data', real.toLocaleString());
-    setBar('bm-data-bar', (real/THRESH)*100);
-    setTxt('bm-data-sub', labeled+' etiquetados con resultado real · meta '+THRESH+' para reentrenar');
-    // "Le falta": brecha de precisión a la meta + datos que faltan
-    const accGap=Math.max(0,TARGET-acc);
-    setTxt('bm-gap', acc>=TARGET?'meta lograda':Math.round(accGap*100)+'%');
-    setBar('bm-gap-bar', acc>=TARGET?100:(accGap/0.40)*100);
-    const dataFalta=Math.max(0,THRESH-labeled);
-    setTxt('bm-gap-sub', acc>=TARGET? 'Precisión en la meta del '+(TARGET*100)+'%' :
-      'Para llegar al '+(TARGET*100)+'%: faltan ~'+dataFalta+' datos etiquetados reales');
+    setBar('bm-data-bar', dataPct);
+    setTxt('bm-data-sub', labeled+' etiquetados · meta '+DATA_GOAL.toLocaleString()+' registros'
+      + (real>=THRESH?'':' · (mín. '+THRESH+' para reentrenar)'));
+    // "Le falta": brecha hacia la meta de 10.000 datos (más datos → más precisión)
+    const faltaPct = Math.max(0, Math.round(100-dataPct));
+    const faltanReg = Math.max(0, DATA_GOAL-real);
+    setTxt('bm-gap', real>=DATA_GOAL?'meta lograda':faltaPct+'%');
+    setBar('bm-gap-bar', dataPct);
+    setTxt('bm-gap-sub', real>=DATA_GOAL? 'Meta de 10.000 registros alcanzada ✓' :
+      'Faltan '+faltanReg.toLocaleString()+' registros para la meta de 10.000 · precisión actual '+Math.round(acc*100)+'%');
     // Mezcla de colores del campo según la distribución real de riesgo (si hay datos)
     const pr=ds.por_riesgo||[]; const tot=pr.reduce((a,r)=>a+r.count,0);
     if(tot){ const g={alta:0,media:0,baja:0}; pr.forEach(r=>{ if(g[r.riesgo]!=null) g[r.riesgo]=r.count; });
       Brain.setMix({ok:g.alta/tot, med:g.media/tot, bad:g.baja/tot}); }
     // Estado en reposo: menos preciso → más "esfuerzo" visual
     Brain.setActivity(0.3+err*0.55);
-    Brain.setState(acc? ('Aprendiendo en vivo · le falta '+(acc>=TARGET?'0':Math.round(accGap*100))+'% para la meta') : 'Aprendiendo en vivo');
+    Brain.setState('Aprendiendo en vivo · le falta '+(real>=DATA_GOAL?'0':faltaPct)+'% para la meta de 10.000 datos');
   }catch(e){ /* silencioso */ }
 }
 
@@ -1161,16 +1492,18 @@ function renderLoss(lc, vc){
     <span><b style="color:#1E40AF">━</b> Entrenamiento</span>${vc&&vc.length?'<span><b style="color:#D4AF37">┅</b> Validación (early-stopping)</span>':''}</div>`;
 }
 function renderCoef(coefs,intercept){
-  const ic=document.getElementById('lc-intercept'); if(ic) ic.textContent=(intercept>=0?'+':'')+intercept;
+  const ic=document.getElementById('lc-intercept');
+  if(ic){ const c0=coefs&&coefs[0]&&coefs[0].intercept_or; ic.textContent = '×'+(Math.exp(intercept)).toFixed(2); }
   const box=document.getElementById('coef-chart');
   if(!coefs||!coefs.length){ box.innerHTML='<div class="chart-empty">Reentrena para ver los coeficientes.</div>'; return; }
   const maxA=Math.max(...coefs.map(c=>Math.abs(c.coef)),0.01);
   box.innerHTML=coefs.map(c=>{
     const pos=c.coef>=0, col=pos?'#16A34A':'#DC2626', w=Math.abs(c.coef)/maxA*50;
+    const or=(c.odds_ratio!=null)?c.odds_ratio:Math.exp(c.coef);
     return `<div class="coef-row"><span class="cl" title="${c.label}">${c.label}</span>
       <div class="coef-mid"><div class="zero"></div>
         <div class="coef-bar" data-w="${w.toFixed(1)}" style="${pos?'left:50%':'right:50%'};background:${col}"></div></div>
-      <span class="cv" style="color:${col}">${pos?'+':''}${c.coef}</span></div>`;
+      <span class="cv" style="color:${col}" title="Odds Ratio = exp(β) = ${(pos?'+':'')+c.coef} en β">×${(+or).toFixed(2)}</span></div>`;
   }).join('');
   requestAnimationFrame(()=>box.querySelectorAll('.coef-bar').forEach(el=>el.style.width=el.dataset.w+'%'));
 }
@@ -1233,6 +1566,7 @@ loadDb();
 loadLearning();
 loadSchema();
 loadBrainMetrics();
+loadSurveySummary();
 setInterval(loadBrainMetrics, 25000);   // refresco periódico del estado de aprendizaje
 </script>
 {% endif %}

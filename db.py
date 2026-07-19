@@ -32,12 +32,16 @@ from werkzeug.security import check_password_hash, generate_password_hash
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(APP_DIR, "data")
+# Almacenamiento en el Escritorio del usuario (persistente fuera del proyecto)
+_DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop", "JNUS_Data")
+DATA_DIR = os.environ.get("JNUS_DATA_DIR", _DESKTOP)
 os.makedirs(DATA_DIR, exist_ok=True)
 DB_PATH = os.environ.get("JNUS_DB_PATH", os.path.join(DATA_DIR, "janus.db"))
+print(f"[JNUS DB] Almacenamiento: {DB_PATH}")
 
 # Columnas de la encuesta = esquema del motor (engine.RAW_NUM + RAW_CAT)
-SURVEY_NUM = ["edad", "ingresos_mensuales", "cargas_familiares", "creditos_activos"]
+SURVEY_NUM = ["edad", "ingresos_mensuales", "cargas_familiares", "creditos_activos",
+              "monto_solicitado", "antiguedad_laboral", "tasa_interes", "plazo_meses"]
 SURVEY_CAT = ["sexo", "educacion", "historial_pagos", "institucion",
               "tipo_credito", "situacion_laboral"]
 SURVEY_COLS = SURVEY_NUM + SURVEY_CAT
@@ -75,6 +79,10 @@ def init_db() -> None:
                 ingresos_mensuales REAL,
                 cargas_familiares  REAL,
                 creditos_activos   REAL,
+                monto_solicitado   REAL,
+                antiguedad_laboral REAL,
+                tasa_interes       REAL,
+                plazo_meses        REAL,
                 sexo               TEXT,
                 educacion          TEXT,
                 historial_pagos    TEXT,
@@ -92,13 +100,34 @@ def init_db() -> None:
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS ix_eval_created ON evaluaciones(created_at)")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_eval_user ON evaluaciones(user_id)")
+        # Migración: variables nuevas de la encuesta en BDs existentes. Idempotente.
+        _add_col(conn, "evaluaciones", "monto_solicitado", "REAL")
+        _add_col(conn, "evaluaciones", "antiguedad_laboral", "REAL")
+        _add_col(conn, "evaluaciones", "tasa_interes", "REAL")
+        _add_col(conn, "evaluaciones", "plazo_meses", "REAL")
         # Migración: columnas de cuenta real (email/contraseña/foto). Idempotente.
         _add_col(conn, "usuarios", "email", "TEXT")
         _add_col(conn, "usuarios", "password_hash", "TEXT")
         _add_col(conn, "usuarios", "avatar", "TEXT")
         _add_col(conn, "usuarios", "updated_at", "TEXT")
+        _add_col(conn, "usuarios", "consent_at", "TEXT")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_user_email "
                      "ON usuarios(email) WHERE email IS NOT NULL")
+        # Encuesta virtual corta (necesidades reales del proceso de crédito)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS encuestas (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at    TEXT NOT NULL,
+                tiene_credito INTEGER,          -- 1 = sí, 0 = no (screener)
+                edad          TEXT,
+                provincia     TEXT,
+                institucion   TEXT,
+                tipo_credito  TEXT,
+                sugerencia    TEXT,             -- pregunta abierta: qué le hace falta / desea
+                user_id       TEXT
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS ix_enc_created ON encuestas(created_at)")
 
 
 def _add_col(conn: sqlite3.Connection, table: str, col: str, decl: str) -> None:
@@ -158,8 +187,10 @@ def _public_user(row: sqlite3.Row) -> Dict[str, Any]:
     return d
 
 
-def create_account(name: str, email: str, password: str) -> Dict[str, Any]:
-    """Crea una cuenta real. Devuelve {ok, user} o {ok:False, error}."""
+def create_account(name: str, email: str, password: str,
+                    consent: bool = False) -> Dict[str, Any]:
+    """Crea una cuenta real. Devuelve {ok, user} o {ok:False, error}.
+    Registra la marca de tiempo del consentimiento LOPDP cuando consent=True."""
     name = (name or "").strip()[:40]
     email = (email or "").strip().lower()[:120]
     if not name:
@@ -169,6 +200,7 @@ def create_account(name: str, email: str, password: str) -> Dict[str, Any]:
     if len(password or "") < 6:
         return {"ok": False, "error": "La contraseña debe tener al menos 6 caracteres."}
     now = _now()
+    consent_at = now if consent else None
     with _lock, _connect() as conn:
         exists = conn.execute(
             "SELECT 1 FROM usuarios WHERE email=?", (email,)
@@ -178,18 +210,38 @@ def create_account(name: str, email: str, password: str) -> Dict[str, Any]:
         uid = _dt.datetime.now().strftime("u%Y%m%d%H%M%S%f")
         conn.execute(
             "INSERT INTO usuarios (id,name,email,password_hash,created_at,last_seen,"
-            "visits,evaluations,updated_at) VALUES (?,?,?,?,?,?,1,0,?)",
-            (uid, name, email, generate_password_hash(password), now, now, now),
+            "visits,evaluations,updated_at,consent_at) VALUES (?,?,?,?,?,?,1,0,?,?)",
+            (uid, name, email, generate_password_hash(password), now, now, now, consent_at),
         )
         row = conn.execute("SELECT * FROM usuarios WHERE id=?", (uid,)).fetchone()
     return {"ok": True, "user": _public_user(row)}
 
 
-def authenticate(email: str, password: str) -> Optional[Dict[str, Any]]:
-    """Verifica credenciales. Devuelve el usuario público o None."""
-    email = (email or "").strip().lower()
+def delete_account(uid: str) -> Dict[str, Any]:
+    """Derecho de supresión (LOPDP): borra la cuenta y todas las evaluaciones
+    ligadas a ese usuario. Devuelve {ok, deleted_evals}."""
+    if not uid:
+        return {"ok": False, "error": "Sesión no válida."}
     with _lock, _connect() as conn:
-        row = conn.execute("SELECT * FROM usuarios WHERE email=?", (email,)).fetchone()
+        n = conn.execute("SELECT COUNT(*) c FROM evaluaciones WHERE user_id=?",
+                         (uid,)).fetchone()["c"]
+        conn.execute("DELETE FROM evaluaciones WHERE user_id=?", (uid,))
+        conn.execute("DELETE FROM usuarios WHERE id=?", (uid,))
+    return {"ok": True, "deleted_evals": n}
+
+
+def authenticate(email_or_name: str, password: str) -> Optional[Dict[str, Any]]:
+    """Verifica credenciales por email O por nombre de usuario. Devuelve el usuario público o None."""
+    identifier = (email_or_name or "").strip()
+    with _lock, _connect() as conn:
+        # Intentar por email primero
+        row = conn.execute("SELECT * FROM usuarios WHERE email=?", (identifier.lower(),)).fetchone()
+        # Si no se encuentra por email, intentar por nombre
+        if not row:
+            row = conn.execute(
+                "SELECT * FROM usuarios WHERE lower(name)=lower(?) AND password_hash IS NOT NULL",
+                (identifier,)
+            ).fetchone()
         if not row or not row["password_hash"]:
             return None
         if not check_password_hash(row["password_hash"], password or ""):
@@ -273,13 +325,16 @@ def save_evaluation(payload: Dict[str, Any], result: Dict[str, Any],
                 INSERT INTO evaluaciones (
                     created_at,user_id,user_name,
                     edad,ingresos_mensuales,cargas_familiares,creditos_activos,
+                    monto_solicitado,antiguedad_laboral,tasa_interes,plazo_meses,
                     sexo,educacion,historial_pagos,institucion,tipo_credito,situacion_laboral,
                     probability,percent,risk,decision,aprobado,aprobado_real,per_model
-                ) VALUES (?,?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?,?,?,?,?,?)
+                ) VALUES (?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?,?,?,?,?,?)
             """, (
                 _now(), uid, uname,
                 _num("edad"), _num("ingresos_mensuales"),
                 _num("cargas_familiares"), _num("creditos_activos"),
+                _num("monto_solicitado"), _num("antiguedad_laboral"),
+                _num("tasa_interes"), _num("plazo_meses"),
                 _txt("sexo"), _txt("educacion"), _txt("historial_pagos"),
                 _txt("institucion"), _txt("tipo_credito"), _txt("situacion_laboral"),
                 prob, float(result.get("percent", prob * 100)),
@@ -300,6 +355,93 @@ def list_evaluations(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
             (limit, offset),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def save_survey(d: Dict[str, Any]) -> int:
+    """Guarda una respuesta de la encuesta corta. Devuelve el id."""
+    with _lock, _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO encuestas (created_at, tiene_credito, edad, provincia, "
+            "institucion, tipo_credito, sugerencia, user_id) VALUES (?,?,?,?,?,?,?,?)",
+            (_now(), 1 if d.get("tiene_credito") else 0,
+             str(d.get("edad") or "")[:40], str(d.get("provincia") or "")[:60],
+             str(d.get("institucion") or "")[:80], str(d.get("tipo_credito") or "")[:60],
+             str(d.get("sugerencia") or "")[:1000], d.get("user_id")))
+        return int(cur.lastrowid)
+
+
+def list_surveys(limit: int = 300) -> List[Dict[str, Any]]:
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM encuestas ORDER BY id DESC LIMIT ?", (int(limit),)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def _norm(s: Any) -> str:
+    """minúsculas, sin tildes, para emparejar encabezados de Google/Microsoft Forms."""
+    import unicodedata
+    s = str(s)
+    s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+    return s.lower().strip()
+
+
+def _cell(row, col) -> str:
+    if col is None:
+        return ""
+    v = row[col]
+    if v is None or v != v:  # NaN (float('nan') != float('nan'))
+        return ""
+    return str(v).strip()
+
+
+def import_survey_dataframe(df) -> int:
+    """Importa un export de Google Forms / Microsoft Forms (CSV o Excel) a `encuestas`.
+    Empareja columnas por palabras clave en el encabezado (sin importar el orden/redacción exacta)."""
+    norm_cols = {c: _norm(c) for c in df.columns}
+
+    def pick(*keyword_sets):
+        for kws in keyword_sets:
+            for orig, nc in norm_cols.items():
+                if all(k in nc for k in kws):
+                    return orig
+        return None
+
+    col_screener = pick(("alguna vez",), ("has solicitado",), ("tenido", "credito"))
+    col_edad = pick(("edad",))
+    col_prov = pick(("provincia",))
+    col_inst = pick(("institucion",))
+    col_tipo = pick(("tipo", "credito"))
+    col_sug = pick(("facilit",), ("molesta",), ("hace falta",), ("gustaria",))
+
+    count = 0
+    for _, row in df.iterrows():
+        if col_screener is not None:
+            v = _cell(row, col_screener).lower()
+            tiene = bool(v[:1] in ("s", "y"))  # sí / yes
+        else:
+            tiene = True  # sin pregunta filtro: todas las filas son respondientes válidos
+        save_survey({
+            "tiene_credito": tiene,
+            "edad": _cell(row, col_edad),
+            "provincia": _cell(row, col_prov),
+            "institucion": _cell(row, col_inst),
+            "tipo_credito": _cell(row, col_tipo),
+            "sugerencia": _cell(row, col_sug),
+            "user_id": None,
+        })
+        count += 1
+    return count
+
+
+def survey_stats() -> Dict[str, Any]:
+    with _lock, _connect() as conn:
+        total = conn.execute("SELECT COUNT(*) c FROM encuestas").fetchone()["c"]
+        con = conn.execute("SELECT COUNT(*) c FROM encuestas WHERE tiene_credito=1").fetchone()["c"]
+        top_prov = [dict(r) for r in conn.execute(
+            "SELECT provincia, COUNT(*) n FROM encuestas WHERE tiene_credito=1 AND provincia<>'' "
+            "GROUP BY provincia ORDER BY n DESC LIMIT 5").fetchall()]
+        return {"total": int(total), "con_credito": int(con),
+                "sin_credito": int(total - con), "top_provincias": top_prov}
 
 
 def stats() -> Dict[str, Any]:
@@ -374,6 +516,7 @@ def export_dataframe(use_real_when_available: bool = True):
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT edad,ingresos_mensuales,cargas_familiares,creditos_activos,"
+            "monto_solicitado,antiguedad_laboral,tasa_interes,plazo_meses,"
             "sexo,educacion,historial_pagos,institucion,tipo_credito,situacion_laboral,"
             "aprobado,aprobado_real FROM evaluaciones"
         ).fetchall()
