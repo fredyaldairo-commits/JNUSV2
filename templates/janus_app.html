@@ -433,7 +433,7 @@ img.doodle.matisse-dark{filter:contrast(1.2) brightness(.98)}
   0%, 100% { filter: drop-shadow(0 0 4px var(--coop-color)); transform: scale(1); }
   50% { filter: drop-shadow(0 0 16px var(--coop-color)); transform: scale(1.05); }
 }
-.coop-logo-lg { width: 80px; height: 80px; border-radius: 16px; background: white; padding: 10px; animation: pulseGlow 1.5s infinite; display: flex; align-items: center; justify-content: center; }
+.coop-logo-lg { width: 90px; height: 90px; border-radius: 18px; background: white; padding: 12px; animation: pulseGlow 1.2s infinite; display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .coop-logo-lg img { width: 100%; height: 100%; object-fit: contain; }
 .coop-logo-lg .coop-mono-fb { font-family: var(--fd); font-weight: 800; font-size: 24px; color: var(--coop-color); }
 .analysis{position:fixed;inset:0;z-index:90;background:var(--bg);
@@ -1972,12 +1972,16 @@ function wizNext(){
 async function runAnalysis(){
   closeWizard();
   const logoCont = document.getElementById('an-logo-container');
+  const robot = document.querySelector('.robot-scene');
   if (answers._coop) {
     logoCont.style.display = 'flex';
+    logoCont.className = 'coop-logo-lg';
     logoCont.innerHTML = coopLogoHTML(answers._coop, 'coop-logo-lg');
     logoCont.style.setProperty('--coop-color', answers._coop.color || 'var(--acc-terra)');
+    if(robot) robot.style.display = 'none';
   } else {
     logoCont.style.display = 'none';
+    if(robot) robot.style.display = 'block';
   }
   const a=document.getElementById('analysis'); a.classList.add('open');
   document.querySelectorAll('.ai-step').forEach(s=>s.classList.remove('on','done'));
