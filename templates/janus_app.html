@@ -2019,7 +2019,7 @@ function renderResult(d){
   rc.style.display='block';
   rc.classList.remove('reveal-in'); void rc.offsetWidth; rc.classList.add('reveal-in');
   const wd=document.getElementById('win-doodle');
-  if(wd) wd.innerHTML = (d.percent>=55) ? \'<img src="/static/win_doodle.png" alt="Aprobado" style="max-width:180px; margin-bottom:12px">\': \'\';
+  if(wd) wd.innerHTML = (d.percent>=55) ? '<img src="/static/win_doodle.png" alt="Aprobado" style="max-width:180px; margin-bottom:12px">' : '<img src="/static/lose_doodle.png" alt="Rechazado" style="max-width:180px; margin-bottom:12px">';
   const pct=d.percent;
   document.getElementById('r-pct').textContent=pct+'%';
   const C=553, arc=document.getElementById('gauge-arc');
