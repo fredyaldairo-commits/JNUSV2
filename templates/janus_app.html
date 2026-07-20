@@ -2231,9 +2231,6 @@ function renderDashboard(){
 }
 
 // ── PWA ──
-let dp=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;const r=document.getElementById('install-row');if(r)r.style.display='flex';});
-function installPWA(){if(dp){dp.prompt();dp=null;}else{toast('Usa el menú del navegador → "Añadir a pantalla de inicio"');}}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js',{scope:'/app'}).catch(()=>{}));}
 
 // ── ADMIN MODE (solo con ?admin=1) ──
