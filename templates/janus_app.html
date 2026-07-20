@@ -1971,18 +1971,10 @@ function wizNext(){
 // ── AI ANALYSIS animation + real scoring ──
 async function runAnalysis(){
   closeWizard();
-  const logoCont = document.getElementById('an-logo-container');
   const robot = document.querySelector('.robot-scene');
-  if (answers._coop) {
-    logoCont.style.display = 'flex';
-    logoCont.className = 'coop-logo-lg';
-    logoCont.innerHTML = coopLogoHTML(answers._coop, 'coop-logo-lg');
-    logoCont.style.setProperty('--coop-color', answers._coop.color || 'var(--acc-terra)');
-    if(robot) robot.style.display = 'none';
-  } else {
-    logoCont.style.display = 'none';
-    if(robot) robot.style.display = 'block';
-  }
+  if(robot) robot.style.display = 'block';
+  const logoCont = document.getElementById('an-logo-container');
+  if(logoCont) logoCont.style.display = 'none';
   const a=document.getElementById('analysis'); a.classList.add('open');
   document.querySelectorAll('.ai-step').forEach(s=>s.classList.remove('on','done'));
   const anFill=document.getElementById('an-fill'), anPc=document.getElementById('an-pc');
