@@ -429,6 +429,13 @@ img.doodle.matisse-dark{filter:contrast(1.2) brightness(.98)}
 .lock-forgot:active{opacity:.6}
 
 /* ── AI ANALYSIS ── */
+@keyframes pulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px var(--coop-color)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 16px var(--coop-color)); transform: scale(1.05); }
+}
+.coop-logo-lg { width: 80px; height: 80px; border-radius: 16px; background: white; padding: 10px; animation: pulseGlow 1.5s infinite; display: flex; align-items: center; justify-content: center; }
+.coop-logo-lg img { width: 100%; height: 100%; object-fit: contain; }
+.coop-logo-lg .coop-mono-fb { font-family: var(--fd); font-weight: 800; font-size: 24px; color: var(--coop-color); }
 .analysis{position:fixed;inset:0;z-index:90;background:var(--bg);
   display:none;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);padding:30px}
 .analysis.open{display:flex;animation:fade .3s ease}
@@ -1300,6 +1307,7 @@ body.modal-bg .marq-track,body.modal-bg .hero .bgimg,body.modal-bg .btn-gold::af
     </div>
     <span class="rs-ground"></span>
   </div>
+  <div id="an-logo-container" style="display:none; flex-direction:column; align-items:center; margin-bottom:20px;"></div>
   <h2>Analizando tu perfil…</h2>
   <div class="sub">El robot lleva tus datos a la IA…</div>
   <div class="ai-steps">
@@ -1317,15 +1325,7 @@ body.modal-bg .marq-track,body.modal-bg .hero .bgimg,body.modal-bg .btn-gold::af
 <!-- ════ BLOQUEO DE SEGURIDAD (PIN + huella/rostro) ════ -->
 <div id="lock">
   <div class="lock-inner">
-    <svg class="doodle" viewBox="0 0 200 200" role="img" aria-label="Seguridad" style="margin-bottom:18px;max-width:140px">
-      <path d="M100 26l56 18v40c0 38-24 66-56 78-32-12-56-40-56-78V44z"/>
-      <path class="fillk" d="M100 36l46 15v33c0 32-20 55-46 66-26-11-46-34-46-66V51z"/>
-      <rect class="wln" x="82" y="92" width="36" height="30" rx="5"/>
-      <path class="wln" d="M88 92v-10c0-7 5-12 12-12s12 5 12 12v10"/>
-      <circle class="wln" cx="100" cy="104" r="3.4"/><path class="wln" d="M100 107v7"/>
-      <path d="M40 40l4 8 8 4-8 4-4 8-4-8-8-4 8-4z"/>
-      <circle cx="164" cy="98" r="3"/><path d="M158 34h12M164 28v12"/>
-    </svg>
+    <img src="/static/seguridad.png" alt="Seguridad" style="margin-bottom:18px;max-width:140px">
     <div class="lock-title" id="lock-title">Ingresa tu PIN</div>
     <div class="lock-sub" id="lock-sub">Tu evaluación está protegida</div>
     <div class="pin-dots" id="pin-dots"><i></i><i></i><i></i><i></i></div>
@@ -1971,6 +1971,14 @@ function wizNext(){
 // ── AI ANALYSIS animation + real scoring ──
 async function runAnalysis(){
   closeWizard();
+  const logoCont = document.getElementById('an-logo-container');
+  if (answers._coop) {
+    logoCont.style.display = 'flex';
+    logoCont.innerHTML = coopLogoHTML(answers._coop, 'coop-logo-lg');
+    logoCont.style.setProperty('--coop-color', answers._coop.color || 'var(--acc-terra)');
+  } else {
+    logoCont.style.display = 'none';
+  }
   const a=document.getElementById('analysis'); a.classList.add('open');
   document.querySelectorAll('.ai-step').forEach(s=>s.classList.remove('on','done'));
   const anFill=document.getElementById('an-fill'), anPc=document.getElementById('an-pc');
@@ -2136,7 +2144,7 @@ function saveHistory(d){
 function renderHistory(){
   const h=JSON.parse(localStorage.getItem('janus_hist')||'[]');
   const el=document.getElementById('hist-list');
-  if(!h.length){el.innerHTML=`<div class="empty">${DOODLE_HERO}<h3 style="margin-top:6px">Sin evaluaciones aún</h3><p>Tu historial aparecerá aquí.</p></div>`;return;}
+  if(!h.length){el.innerHTML=`<div class="empty"><img src="/static/sin_historial.png" alt="Sin historial" style="max-width:180px; margin-bottom:12px; mix-blend-mode: multiply;"><h3 style="margin-top:6px">Sin evaluaciones aún</h3><p>Tu historial aparecerá aquí.</p></div>`;return;}
   el.innerHTML=h.map(x=>{
     const off=553-(553*x.pct/100);
     const dt=new Date(x.date).toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'});
