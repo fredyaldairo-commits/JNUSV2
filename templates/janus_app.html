@@ -2202,6 +2202,11 @@ async function clearHistory(){ if(!await jnusConfirm('¿Borrar todo tu historial
   localStorage.removeItem('janus_hist');renderHistory();renderDashboard();toast('Historial borrado','ok'); }
 
 // ── DASHBOARD (Home) ──
+let dp=null;
+const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+if(isIos && !window.navigator.standalone){const r=document.getElementById('install-row');if(r)r.style.display='flex';}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;const r=document.getElementById('install-row');if(r)r.style.display='flex';});
+function installPWA(){if(dp){dp.prompt();dp=null;}else if(isIos){toast('Para instalar en iPhone:\nToca el ícono Compartir (cuadro con flecha) y elige "Agregar a Inicio"');}else{toast('Usa el menú del navegador \n  "Añadir a pantalla de inicio"');}}
 function renderDashboard(){
   const u=getUser()||{};
   const nm=document.getElementById('dash-name'); if(nm) nm.textContent=(u.name||'Invitado').split(' ')[0];
