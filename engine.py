@@ -947,19 +947,30 @@ class JanusEngine:
         per_model = self._prob_all(Xs)
         prob = self._weighted_prob(per_model)  # Ensemble ponderado por AUC
 
-        # XAI: contribuciones del modelo logístico
+        # XAI: contribuciones PERSONALIZADAS del modelo logístico.
+        # Importante: en las variables categóricas (one-hot) solo cuenta la
+        # categoría que la persona REALMENTE eligió (valor crudo == 1). Sin este
+        # filtro, el StandardScaler vuelve negativas las categorías ausentes y su
+        # contribución sale con el signo invertido (p. ej. "Historial: Malo"
+        # apareciendo como factor a favor, o "Excelente" como algo a mejorar).
         logit = b["models"]["logit"]
         coefs = logit.coef_[0]
+        raw_row = X.iloc[0].values                       # valores SIN escalar (0/1 en dummies)
+        cat_bases = tuple(b.get("raw_cat", RAW_CAT))
+        def _is_onehot(col):
+            return any(col.startswith(base + "_") for base in cat_bases)
         contribs = []
-        for col, coef, val in zip(b["columns"], coefs, Xs[0]):
+        for col, coef, val, raw in zip(b["columns"], coefs, Xs[0], raw_row):
+            if _is_onehot(col) and float(raw) < 0.5:
+                continue                                 # categoría que la persona NO eligió
             c = float(coef * val)
             if abs(c) < 1e-6:
                 continue
             contribs.append({"feature": col, "label": _friendly(col),
                              "impact": c})
         contribs.sort(key=lambda d: abs(d["impact"]), reverse=True)
-        positives = [c for c in contribs if c["impact"] > 0][:5]
-        negatives = [c for c in contribs if c["impact"] < 0][:5]
+        positives = [c for c in contribs if c["impact"] > 0][:8]
+        negatives = [c for c in contribs if c["impact"] < 0][:8]
 
         recs = self._recommendations(payload, prob)
 

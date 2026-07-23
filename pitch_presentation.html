@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JNUS AI - Pitch Animado</title>
+<!-- GSAP para animaciones tipo video -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@700;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #0B0B0C;
+    --gold: #D4AF37;
+    --white: #F9EFE5;
+    --green: #16A34A;
+    --fd: 'IBM Plex Sans', sans-serif;
+    --fb: 'Roboto', sans-serif;
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body, html {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-dark);
+    color: var(--white);
+    font-family: var(--fd);
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .timeline-bar {
+    position: fixed;
+    bottom: 0; left: 0; height: 5px;
+    background: var(--gold);
+    width: 0%;
+    z-index: 100;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    text-align: center;
+    padding: 40px;
+    visibility: hidden;
+  }
+
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* Text Styles */
+  .giant-text {
+    font-size: 10vw;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: -3px;
+    overflow: hidden;
+  }
+  
+  .medium-text {
+    font-size: 4vw;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 2vh;
+    color: #CBD5E1;
+  }
+
+  .small-text {
+    font-family: var(--fb);
+    font-size: 2vw;
+    font-weight: 500;
+    color: #94A3B8;
+    margin-top: 2vh;
+  }
+
+  .highlight { color: var(--gold); }
+  .box-highlight { background: var(--gold); color: var(--bg-dark); padding: 0 15px; border-radius: 10px; display: inline-block; }
+
+  /* Elementos específicos */
+  .metrics {
+    display: flex;
+    gap: 5vw;
+    margin-top: 5vh;
+  }
+  .metric { display: flex; flex-direction: column; }
+  .m-val { font-size: 8vw; font-weight: 800; color: var(--gold); line-height: 1; }
+  .m-lbl { font-size: 1.5vw; text-transform: uppercase; letter-spacing: 2px; }
+
+  /* Animación de letras (SplitText casero) */
+  .char { display: inline-block; opacity: 0; transform: translateY(50px); }
+  .word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 10px;}
+  
+  .demo-video {
+    width: 60vw;
+    height: 60vh;
+    background: #1A1A1A;
+    border-radius: 20px;
+    border: 4px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2vw;
+    margin-top: 3vh;
+    overflow: hidden;
+    position: relative;
+  }
+  .demo-video::after {
+    content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+    background: linear-gradient(45deg, transparent, rgba(212,175,55,0.2), transparent);
+    animation: shine 2s infinite linear;
+  }
+  @keyframes shine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+</style>
+</head>
+<body>
+
+  <div class="timeline-bar" id="progress"></div>
+
+  <!-- Slide 1 -->
+  <div class="slide active" id="slide-1">
+    <div class="giant-text"><span class="highlight">JNUS</span> AI</div>
+    <div class="medium-text">El Futuro del Crédito Comunal</div>
+  </div>
+
+  <!-- Slide 2 -->
+  <div class="slide" id="slide-2">
+    <div class="giant-text" style="font-size: 18vw;">60%</div>
+    <div class="medium-text">De los créditos son <span class="highlight">rechazados</span>.</div>
+    <div class="small-text">Procesos manuales. Demoras. Sesgos.</div>
+  </div>
+
+  <!-- Slide 3 -->
+  <div class="slide" id="slide-3">
+    <div class="giant-text" style="font-size: 7vw;">Decisiones en Segundos</div>
+    <div class="medium-text">Impulsado por <span class="box-highlight">Inteligencia Artificial</span></div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="m-val">-70%</div>
+        <div class="m-lbl">Tiempo</div>
+      </div>
+      <div class="metric">
+        <div class="m-val">+40%</div>
+        <div class="m-lbl">Aprobación Segura</div>
+      </div>
+      <div class="metric">
+        <div class="m-val">0</div>
+        <div class="m-lbl">Sesgos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4 -->
+  <div class="slide" id="slide-4">
+    <div class="giant-text" style="font-size: 6vw;">La Magia en <span class="highlight">Acción</span></div>
+    <div class="demo-video">
+      [Inserta aquí tu video demostrativo]
+    </div>
+  </div>
+
+  <!-- Slide 5 -->
+  <div class="slide" id="slide-5">
+    <div class="giant-text" style="font-size: 8vw;">Únicos en el <span class="highlight">Mercado</span></div>
+    <div class="medium-text" style="text-align: left; margin-top: 5vh;">
+      <div style="margin-bottom: 2vh;"><span style="color:red">⨯</span> Buró Tradicional: <b>Mira al pasado. Lento.</b></div>
+      <div><span style="color:var(--green)">✓</span> JNUS AI: <b>Predictivo. Comunal. Instantáneo.</b></div>
+    </div>
+  </div>
+
+  <!-- Slide 6 -->
+  <div class="slide" id="slide-6">
+    <div class="giant-text" style="font-size: 8vw;">SaaS <span class="highlight">B2B</span></div>
+    <div class="medium-text">Modelo de Suscripción API</div>
+    <div class="small-text" style="font-size: 2.5vw; margin-top: 5vh; line-height: 1.5;">
+      1. Piloto Local (2 Cooperativas)<br>
+      2. Integración de API<br>
+      3. Escalamiento Nacional
+    </div>
+  </div>
+
+  <!-- Slide 7 -->
+  <div class="slide" id="slide-7">
+    <div class="giant-text" style="font-size: 8vw;">El Crédito es <span class="highlight">Confianza</span></div>
+    <div class="medium-text">Nosotros damos la seguridad.</div>
+    <div class="giant-text" style="margin-top: 5vh; font-size: 5vw; color: var(--gold);">GRACIAS</div>
+  </div>
+
+<script>
+  // Preparar textos para animación por palabra/letra (Kinetic Typography)
+  document.querySelectorAll('.giant-text, .medium-text').forEach(el => {
+    const text = el.innerHTML;
+    // Evitamos romper tags HTML simples asumiendo que el span highlight cubre palabras completas
+    if(!text.includes('<span')) {
+      const words = text.split(' ').map(w => `<span class="word"><span class="char">${w}</span></span>`).join(' ');
+      el.innerHTML = words;
+    } else {
+      // Simplificado: animar el bloque completo si tiene html interno, para no complicar el parser
+      el.classList.add('animate-block');
+    }
+  });
+
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  let isAnimating = false;
+
+  // Función principal de animación de GSAP para simular un "video dinámico"
+  function playSlideAnimation(index) {
+    const slide = slides[index];
+    const tl = gsap.timeline();
+
+    // Animaciones específicas de texto
+    const words = slide.querySelectorAll('.char');
+    const blocks = slide.querySelectorAll('.animate-block');
+    const metrics = slide.querySelectorAll('.metric');
+    const video = slide.querySelector('.demo-video');
+    const smalls = slide.querySelectorAll('.small-text');
+
+    if(words.length) {
+      tl.fromTo(words, 
+        { y: 100, opacity: 0, rotateX: -90 },
+        { y: 0, opacity: 1, rotateX: 0, duration: 0.8, stagger: 0.05, ease: "back.out(1.7)" }
+      );
+    }
+    if(blocks.length) {
+      tl.fromTo(blocks,
+        { scale: 0.5, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.7, stagger: 0.1, ease: "power3.out" }, "<0.2"
+      );
+    }
+    if(metrics.length) {
+      tl.fromTo(metrics,
+        { x: -50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power2.out" }, "-=0.2"
+      );
+    }
+    if(video) {
+      tl.fromTo(video,
+        { scale: 0.8, opacity: 0, rotationY: 20 },
+        { scale: 1, opacity: 1, rotationY: 0, duration: 1, ease: "elastic.out(1, 0.5)" }, "-=0.3"
+      );
+    }
+    if(smalls.length) {
+      tl.fromTo(smalls,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.2 }, "-=0.2"
+      );
+    }
+  }
+
+  function goToSlide(nextIndex) {
+    if(isAnimating) return;
+    if(nextIndex < 0 || nextIndex >= slides.length) return;
+    isAnimating = true;
+
+    const currentSlide = slides[current];
+    const nextSlide = slides[nextIndex];
+
+    // Animación de salida brutal
+    gsap.to(currentSlide, {
+      scale: 1.5,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.in",
+      onComplete: () => {
+        currentSlide.classList.remove('active');
+        nextSlide.classList.add('active');
+        
+        // Setup inicial del next
+        gsap.set(nextSlide, { scale: 0.8, opacity: 0 });
+        
+        // Animación de entrada general del slide
+        gsap.to(nextSlide, {
+          scale: 1,
+          opacity: 1,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            playSlideAnimation(nextIndex);
+            isAnimating = false;
+          }
+        });
+      }
+    });
+
+    current = nextIndex;
+    
+    // Progress bar
+    gsap.to('#progress', {
+      width: (current / (slides.length - 1)) * 100 + '%',
+      duration: 0.5
+    });
+  }
+
+  // Iniciar la primera slide
+  playSlideAnimation(0);
+
+  // Navegación
+  window.addEventListener('click', () => goToSlide(current + 1));
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowRight') goToSlide(current + 1);
+    if (e.code === 'ArrowLeft') goToSlide(current - 1);
+  });
+</script>
+</body>
+</html>
