@@ -257,7 +257,7 @@ def consumer_app():
 
 @app.route("/pitch")
 def pitch_presentation():
-    return render_template("JNUS_Pitch_Final_V2.html")
+    return render_template("JNUS_Pitch_Final.html")
 
 
 # Rutas legacy retiradas → redirigen a la app única (evita abrir el dashboard viejo).
