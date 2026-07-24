@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JNUS AI - Presentación Oficial</title>
+    <style>
+        :root {
+            /* Colores Corporativos */
+            --bg-color: #08090c;
+            --text-main: #F4F1EA;
+            --text-muted: #9AA0AB;
+            --accent-terra: #E0A75E;
+            --accent-gold: #F0C650;
+            --accent-green: #57D08A;
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            
+            /* Tipografía */
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            overflow: hidden; /* No scroll, slide navigation */
+            background-image: radial-gradient(circle at 50% 0%, #151820 0%, #08090c 70%);
+        }
+
+        /* Estructura de Slides */
+        .slider-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in-out, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: translateY(30px);
+            padding: 5%;
+            text-align: center;
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        /* Tipografía Base */
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+        
+        .highlight-terra { color: var(--accent-terra); }
+        .highlight-gold { color: var(--accent-gold); }
+        .highlight-green { color: var(--accent-green); }
+
+        h2 {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 400;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* Elementos UI Específicos */
+        .app-mockup {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 40px;
+        }
+
+        .qr-box {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .qr-box img {
+            width: 250px;
+            height: 250px;
+            margin-bottom: 15px;
+            box-shadow: none;
+        }
+
+        /* Tarjetas de Modelos AI */
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .model-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .model-card:hover {
+            border-color: var(--accent-terra);
+            transform: translateY(-5px);
+        }
+
+        .model-card h3 {
+            color: var(--accent-terra);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .model-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .sum-arrow {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin: 30px 0;
+            animation: pulse 2s infinite;
+        }
+
+        .final-probability {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        /* Animaciones */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        
+        /* Navegación */
+        .nav-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            backdrop-filter: blur(5px);
+            transition: background 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-terra);
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-terra), var(--accent-gold));
+            z-index: 100;
+            transition: width 0.3s ease;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="slider-container">
+        
+        <!-- Slide 1: El Problema -->
+        <div class="slide active">
+            <img src="static/logo-light.png" alt="JNUS Logo" style="height: 60px; margin-bottom: 40px; opacity: 0.8;">
+            <h1>El acceso al crédito: <br><span class="highlight-terra">Una barrera silenciosa.</span></h1>
+            <h2>¿El Buró de Crédito cuenta toda la historia?</h2>
+            
+            <div style="display:flex; justify-content:center; gap: 40px; margin-top:50px;">
+                <div style="text-align:center; opacity:0.7;">
+                    <img src="static/sin_historial.png" alt="Problema" style="height: 120px; filter: grayscale(1) invert(1) opacity(0.8);">
+                    <p style="margin-top:15px; font-size:1.1rem;">Comerciantes, Agricultores, Emprendedores</p>
+                </div>
+                <div style="text-align:center; opacity:0.7;">
+                    <img src="static/icon_security.png" alt="Buro" style="height: 120px; filter: grayscale(1) invert(1) opacity(0.8);">
+                    <p style="margin-top:15px; font-size:1.1rem;">Limitados por métricas tradicionales</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: La Solución -->
+        <div class="slide">
+            <div class="glass-container">
+                <img src="static/logo-full.png" alt="JNUS AI" style="height: 90px; margin-bottom: 30px;">
+                <h1>Decisión <span class="highlight-gold">Inteligente</span>.<br>Múltiples <span class="highlight-green">Opciones</span>.</h1>
+                <h2>Analizamos tu verdadera capacidad a través de variables de peso real, conectándote con las cooperativas que mejor se adaptan a ti.</h2>
+            </div>
+        </div>
+
+        <!-- Slide 3: El Producto (Demo y QR) -->
+        <div class="slide">
+            <h1>Transparencia en <span class="highlight-terra">menos de 1 minuto</span></h1>
+            <h2>Seguridad → Perfil → Cooperativa → Resultados</h2>
+            
+            <div class="app-mockup">
+                <!-- Simulación de app / íconos visuales -->
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="glass-container" style="padding: 20px; display:flex; align-items:center; gap:15px;">
+                        <img src="static/icon_consumo.png" alt="Consumo" style="height: 40px; box-shadow:none;">
+                        <span style="font-size:1.2rem;">Crédito de Consumo</span>
+                    </div>
+                    <div class="glass-container" style="padding: 20px; display:flex; align-items:center; gap:15px; border-color:var(--accent-terra)">
+                        <img src="static/icon_microcredito.png" alt="Microcredito" style="height: 40px; box-shadow:none;">
+                        <span style="font-size:1.2rem;">Microcrédito Productivo</span>
+                    </div>
+                </div>
+                
+                <!-- QR Code para escanear en vivo -->
+                <div class="qr-box">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://jnusv2-production.up.railway.app/app" alt="QR App">
+                    <span>¡Escanea y pruébalo ahora!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: El "Cómo" (Modelos IA) -->
+        <div class="slide">
+            <h1>Nuestra <span class="highlight-gold">Inteligencia Artificial</span></h1>
+            <h2>Cuatro modelos matemáticos combinados para una evaluación justa.</h2>
+            
+            <div class="models-grid">
+                <div class="model-card">
+                    <h3>Regresión Logística</h3>
+                    <p>Evaluación base y causalidad económica</p>
+                </div>
+                <div class="model-card">
+                    <h3>Random Forest</h3>
+                    <p>Robustez y control de varianza</p>
+                </div>
+                <div class="model-card">
+                    <h3>Red Neuronal</h3>
+                    <p>Análisis profundo de variables</p>
+                </div>
+                <div class="model-card">
+                    <h3>XGBoost</h3>
+                    <p>Precisión en patrones complejos</p>
+                </div>
+            </div>
+            
+            <div class="sum-arrow">▼</div>
+            
+            <div class="glass-container" style="padding: 20px; max-width:500px; margin: 0 auto;">
+                <p style="color:var(--text-muted); text-transform:uppercase; font-size:0.9rem; letter-spacing:2px;">Probabilidad de Aprobación</p>
+                <div class="final-probability">85%</div>
+            </div>
+        </div>
+
+        <!-- Slide 5: El Impacto (Cooperativas y Machala) -->
+        <div class="slide">
+            <h1>Inclusión Real donde <br><span class="highlight-green">más se necesita</span></h1>
+            
+            <div style="display:flex; justify-content:center; gap:60px; margin-top:50px;">
+                <div class="glass-container" style="max-width: 400px; text-align:left;">
+                    <img src="static/icon_cooperativa.png" alt="Cooperativa" style="height:50px; margin-bottom:20px; filter: brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(320deg);">
+                    <h3 style="font-size:1.5rem; color:var(--accent-terra); margin-bottom:10px;">Las Cooperativas (EPS)</h3>
+                    <p style="color:var(--text-muted); font-size:1.1rem; line-height:1.6;">Acogen a la población marginada por la banca tradicional, brindando oportunidades reales de desarrollo.</p>
+                </div>
+                
+                <div class="glass-container" style="max-width: 400px; text-align:left;">
+                    <img src="static/crecimiento.png" alt="Machala" style="height:50px; margin-bottom:20px; filter: brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(80deg);">
+                    <h3 style="font-size:1.5rem; color:var(--accent-green); margin-bottom:10px;">El Motor de Machala</h3>
+                    <p style="color:var(--text-muted); font-size:1.1rem; line-height:1.6;">Miles de comerciantes y productores con ingresos reales necesitan democratizar su acceso al crédito.</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn">←</button>
+        <button class="nav-btn" id="nextBtn">→</button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progress');
+        
+        let currentSlide = 0;
+
+        function updateSlides() {
+            slides.forEach((slide, index) => {
+                if(index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+            
+            // Actualizar barra de progreso
+            const progress = ((currentSlide + 1) / slides.length) * 100;
+            progressBar.style.width = progress + '%';
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlides();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlides();
+            }
+        }
+
+        // Eventos de click
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
+
+        // Eventos de teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space' || e.key === 'Enter') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // Inicializar
+        updateSlides();
+    </script>
+</body>
+</html>

@@ -255,6 +255,11 @@ def consumer_app():
     return render_template("janus_app.html")
 
 
+@app.route("/pitch")
+def pitch_presentation():
+    return render_template("JNUS_Pitch_Final_V2.html")
+
+
 # Rutas legacy retiradas → redirigen a la app única (evita abrir el dashboard viejo).
 @app.route("/lab")
 def legacy_lab():
